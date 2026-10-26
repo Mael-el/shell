@@ -1,0 +1,358 @@
+{
+ "checked_at": "2026-10-26T23:41:55+00:00",
+ "method": {
+  "github": "api.github.com/repos/{owner}/{repo} (étoiles, licence, archivage, dernière poussée)",
+  "http": "requête HTTP directe sur chaque URL depuis l'environnement d'exécution"
+ },
+ "counts": {
+  "resources": 41,
+  "http_checked": false,
+  "http_reachable": 0,
+  "http_unreachable": 0,
+  "github_checked": 13
+ },
+ "resources": {
+  "https://overthewire.org/wargames/bandit/": {
+   "url": "https://overthewire.org/wargames/bandit/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://exercism.org/tracks/python": {
+   "url": "https://exercism.org/tracks/python",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://tryhackme.com/": {
+   "url": "https://tryhackme.com/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://academy.hackthebox.com/": {
+   "url": "https://academy.hackthebox.com/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://portswigger.net/web-security": {
+   "url": "https://portswigger.net/web-security",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://picoctf.org/": {
+   "url": "https://picoctf.org/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://www.root-me.org/": {
+   "url": "https://www.root-me.org/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://overthewire.org/wargames/": {
+   "url": "https://overthewire.org/wargames/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://letsdefend.io/": {
+   "url": "https://letsdefend.io/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://cyberdefenders.org/": {
+   "url": "https://cyberdefenders.org/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://crackmes.one/": {
+   "url": "https://crackmes.one/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://pwn.college/": {
+   "url": "https://pwn.college/",
+   "checked_at": "2026-10-26T23:41:51+00:00",
+   "github": {
+    "repo": "pwncollege/dojo",
+    "full_name": "pwncollege/dojo",
+    "stars": 508,
+    "forks": 185,
+    "open_issues": 274,
+    "license": "BSD-2-Clause",
+    "language": "Python",
+    "archived": false,
+    "pushed_at": "2026-10-23",
+    "created_at": "2019-08-30",
+    "description": "Infrastructure powering the pwn.college dojo",
+    "html_url": "https://github.com/pwncollege/dojo"
+   }
+  },
+  "https://cryptohack.org/": {
+   "url": "https://cryptohack.org/",
+   "checked_at": "2026-10-26T23:41:51+00:00"
+  },
+  "https://mas.owasp.org/MASTG/": {
+   "url": "https://mas.owasp.org/MASTG/",
+   "checked_at": "2026-10-26T23:41:51+00:00",
+   "github": {
+    "repo": "OWASP/mastg",
+    "full_name": "OWASP/mastg",
+    "stars": 13287,
+    "forks": 2837,
+    "open_issues": 248,
+    "license": "CC-BY-SA-4.0",
+    "language": "Python",
+    "archived": false,
+    "pushed_at": "2026-10-26",
+    "created_at": "2016-09-30",
+    "description": "The OWASP Mobile Application Security Testing Guide (MASTG) is a comprehensive manual for mobile app security testing and reverse engineering. It describes technical processes for verifying the OWASP ",
+    "html_url": "https://github.com/OWASP/mastg"
+   }
+  },
+  "https://github.com/RhinoSecurityLabs/cloudgoat": {
+   "url": "https://github.com/RhinoSecurityLabs/cloudgoat",
+   "checked_at": "2026-10-26T23:41:51+00:00",
+   "github": {
+    "repo": "RhinoSecurityLabs/cloudgoat",
+    "full_name": "RhinoSecurityLabs/cloudgoat",
+    "stars": 3764,
+    "forks": 773,
+    "open_issues": 20,
+    "license": "BSD-3-Clause",
+    "language": "Python",
+    "archived": false,
+    "pushed_at": "2026-10-14",
+    "created_at": "2018-07-17",
+    "description": "CloudGoat is Rhino Security Labs' \"Vulnerable by Design\" AWS deployment tool",
+    "html_url": "https://github.com/RhinoSecurityLabs/cloudgoat"
+   }
+  },
+  "https://nps.edu/web/c3o/labtainers": {
+   "url": "https://nps.edu/web/c3o/labtainers",
+   "checked_at": "2026-10-26T23:41:52+00:00",
+   "github": {
+    "repo": "mfthomps/Labtainers",
+    "full_name": "mfthomps/Labtainers",
+    "stars": 316,
+    "forks": 95,
+    "open_issues": 23,
+    "license": null,
+    "language": "Python",
+    "archived": false,
+    "pushed_at": "2026-09-26",
+    "created_at": "2018-04-13",
+    "description": "Labtainers: A Docker-based cyber lab framework",
+    "html_url": "https://github.com/mfthomps/Labtainers"
+   }
+  },
+  "https://exercism.org/": {
+   "url": "https://exercism.org/",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://www.codingame.com/": {
+   "url": "https://www.codingame.com/",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://www.codewars.com/": {
+   "url": "https://www.codewars.com/",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://mystery.knightlab.com/": {
+   "url": "https://mystery.knightlab.com/",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://flexboxfroggy.com/#fr": {
+   "url": "https://flexboxfroggy.com/#fr",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://www.theodinproject.com/": {
+   "url": "https://www.theodinproject.com/",
+   "checked_at": "2026-10-26T23:41:52+00:00",
+   "github": {
+    "repo": "TheOdinProject/theodinproject",
+    "full_name": "TheOdinProject/theodinproject",
+    "stars": 4663,
+    "forks": 2142,
+    "open_issues": 46,
+    "license": "MIT",
+    "language": "Ruby",
+    "archived": false,
+    "pushed_at": "2026-10-25",
+    "created_at": "2013-05-15",
+    "description": "Main website for The Odin Project",
+    "html_url": "https://github.com/TheOdinProject/theodinproject"
+   }
+  },
+  "https://cmdchallenge.com/": {
+   "url": "https://cmdchallenge.com/",
+   "checked_at": "2026-10-26T23:41:52+00:00"
+  },
+  "https://learngitbranching.js.org/?locale=fr_FR": {
+   "url": "https://learngitbranching.js.org/?locale=fr_FR",
+   "checked_at": "2026-10-26T23:41:52+00:00",
+   "github": {
+    "repo": "pcottle/learnGitBranching",
+    "full_name": "pcottle/learnGitBranching",
+    "stars": 34167,
+    "forks": 6032,
+    "open_issues": 56,
+    "license": "MIT",
+    "language": "JavaScript",
+    "archived": false,
+    "pushed_at": "2026-10-26",
+    "created_at": "2012-08-13",
+    "description": "An interactive git visualization and tutorial. Aspiring students of git can use this app to educate and challenge themselves towards mastery of git!",
+    "html_url": "https://github.com/pcottle/learnGitBranching"
+   }
+  },
+  "https://sqlbolt.com/": {
+   "url": "https://sqlbolt.com/",
+   "checked_at": "2026-10-26T23:41:53+00:00"
+  },
+  "https://regexone.com/": {
+   "url": "https://regexone.com/",
+   "checked_at": "2026-10-26T23:41:53+00:00"
+  },
+  "https://owasp.org/www-project-juice-shop/": {
+   "url": "https://owasp.org/www-project-juice-shop/",
+   "checked_at": "2026-10-26T23:41:53+00:00",
+   "github": {
+    "repo": "juice-shop/juice-shop",
+    "full_name": "juice-shop/juice-shop",
+    "stars": 14243,
+    "forks": 20257,
+    "open_issues": 5,
+    "license": "MIT",
+    "language": "TypeScript",
+    "archived": false,
+    "pushed_at": "2026-10-26",
+    "created_at": "2014-09-19",
+    "description": "OWASP Juice Shop: Probably the most modern and sophisticated insecure web application",
+    "html_url": "https://github.com/juice-shop/juice-shop"
+   }
+  },
+  "https://github.com/digininja/DVWA": {
+   "url": "https://github.com/digininja/DVWA",
+   "checked_at": "2026-10-26T23:41:53+00:00",
+   "github": {
+    "repo": "digininja/DVWA",
+    "full_name": "digininja/DVWA",
+    "stars": 13905,
+    "forks": 5228,
+    "open_issues": 8,
+    "license": "GPL-3.0",
+    "language": "PHP",
+    "archived": false,
+    "pushed_at": "2026-10-18",
+    "created_at": "2013-05-01",
+    "description": "Damn Vulnerable Web Application (DVWA)",
+    "html_url": "https://github.com/digininja/DVWA"
+   }
+  },
+  "https://github.com/WebGoat/WebGoat": {
+   "url": "https://github.com/WebGoat/WebGoat",
+   "checked_at": "2026-10-26T23:41:53+00:00",
+   "github": {
+    "repo": "WebGoat/WebGoat",
+    "full_name": "WebGoat/WebGoat",
+    "stars": 9438,
+    "forks": 8063,
+    "open_issues": 40,
+    "license": "NOASSERTION",
+    "language": "JavaScript",
+    "archived": false,
+    "pushed_at": "2026-10-26",
+    "created_at": "2015-03-06",
+    "description": "WebGoat is a deliberately insecure application",
+    "html_url": "https://github.com/WebGoat/WebGoat"
+   }
+  },
+  "https://github.com/vulhub/vulhub": {
+   "url": "https://github.com/vulhub/vulhub",
+   "checked_at": "2026-10-26T23:41:54+00:00",
+   "github": {
+    "repo": "vulhub/vulhub",
+    "full_name": "vulhub/vulhub",
+    "stars": 21414,
+    "forks": 4818,
+    "open_issues": 54,
+    "license": "MIT",
+    "language": "Dockerfile",
+    "archived": false,
+    "pushed_at": "2026-10-17",
+    "created_at": "2017-04-09",
+    "description": "Pre-Built Vulnerable Environments Based on Docker-Compose",
+    "html_url": "https://github.com/vulhub/vulhub"
+   }
+  },
+  "https://github.com/clong/DetectionLab": {
+   "url": "https://github.com/clong/DetectionLab",
+   "checked_at": "2026-10-26T23:41:54+00:00",
+   "github": {
+    "repo": "clong/DetectionLab",
+    "full_name": "clong/DetectionLab",
+    "stars": 5052,
+    "forks": 1009,
+    "open_issues": 42,
+    "license": "MIT",
+    "language": "HTML",
+    "archived": false,
+    "pushed_at": "2024-07-06",
+    "created_at": "2017-03-25",
+    "description": "Automate the creation of a lab environment complete with security tooling and logging best practices",
+    "html_url": "https://github.com/clong/DetectionLab"
+   }
+  },
+  "https://github.com/codecrafters-io/build-your-own-x": {
+   "url": "https://github.com/codecrafters-io/build-your-own-x",
+   "checked_at": "2026-10-26T23:41:54+00:00",
+   "github": {
+    "repo": "codecrafters-io/build-your-own-x",
+    "full_name": "codecrafters-io/build-your-own-x",
+    "stars": 556454,
+    "forks": 52093,
+    "open_issues": 681,
+    "license": null,
+    "language": "Markdown",
+    "archived": false,
+    "pushed_at": "2026-07-14",
+    "created_at": "2018-05-09",
+    "description": "Master programming by recreating your favorite technologies from scratch.",
+    "html_url": "https://github.com/codecrafters-io/build-your-own-x"
+   }
+  },
+  "https://github.com/TheAlgorithms/Python": {
+   "url": "https://github.com/TheAlgorithms/Python",
+   "checked_at": "2026-10-26T23:41:55+00:00",
+   "github": {
+    "repo": "TheAlgorithms/Python",
+    "full_name": "TheAlgorithms/Python",
+    "stars": 225548,
+    "forks": 51222,
+    "open_issues": 64,
+    "license": "MIT",
+    "language": "Python",
+    "archived": false,
+    "pushed_at": "2026-10-20",
+    "created_at": "2016-07-16",
+    "description": "All Algorithms implemented in Python",
+    "html_url": "https://github.com/TheAlgorithms/Python"
+   }
+  },
+  "https://codecrafters.io/": {
+   "url": "https://codecrafters.io/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://killercoda.com/playgrounds/scenario/docker": {
+   "url": "https://killercoda.com/playgrounds/scenario/docker",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://sadservers.com/": {
+   "url": "https://sadservers.com/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://hacknet-os.com/": {
+   "url": "https://hacknet-os.com/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://greyhackgame.com/": {
+   "url": "https://greyhackgame.com/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://store.steampowered.com/app/1444480/Turing_Complete/": {
+   "url": "https://store.steampowered.com/app/1444480/Turing_Complete/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  },
+  "https://www.zachtronics.com/shenzhen-io/": {
+   "url": "https://www.zachtronics.com/shenzhen-io/",
+   "checked_at": "2026-10-26T23:41:55+00:00"
+  }
+ }
+}

@@ -228,10 +228,10 @@
      "label": "Docker et surveillance système",
      "track": "systeme",
      "xp": 60,
-     "detail": "Conteneurs isolés, limites de ressources et métriques : la base d'un laboratoire jetable.",
+     "detail": "Conteneurs isolés, limites de ressources et métriques. Play with Docker ayant fermé en mars 2026, on utilise Killercoda ou Docker installé sur sa propre machine.",
      "resource": {
-      "name": "Play with Docker",
-      "url": "https://labs.play-with-docker.com/"
+      "name": "Killercoda — Docker",
+      "url": "https://killercoda.com/playgrounds/scenario/docker"
      }
     }
    ]
@@ -287,20 +287,27 @@
    {
     "name": "OverTheWire Bandit",
     "url": "https://overthewire.org/wargames/bandit/",
-    "domain": "Linux & Bash",
-    "why": "Commencer ici : chaque niveau est un secret à trouver, pas une vidéo à regarder."
+    "note": "Wargame Linux en SSH : 34 niveaux, un mot de passe par niveau",
+    "access": "gratuit",
+    "provider": "OverTheWire",
+    "detail": "Chaque niveau se termine par un secret qui ouvre le suivant. Aucune inscription."
    },
    {
     "name": "Exercism — Python",
     "url": "https://exercism.org/tracks/python",
-    "domain": "Programmation",
-    "why": "Tests automatiques et mentorat : on écrit du code, on le fait corriger."
+    "note": "Tests automatiques + mentorat humain sur chaque solution",
+    "access": "gratuit",
+    "provider": "Exercism",
+    "detail": "Open source et à but non lucratif ; le mentorat est assuré par des bénévoles."
    },
    {
     "name": "TryHackMe",
     "url": "https://tryhackme.com/",
-    "domain": "Cybersécurité",
-    "why": "Parcours guidés pour passer des fondamentaux aux premières machines."
+    "note": "Parcours guidés, machines en navigateur, progression chiffrée",
+    "access": "freemium",
+    "provider": "TryHackMe",
+    "price": "gratuit : rooms libres + 1 h/jour d'AttackBox · Premium ≈ 10–18 $/mois selon engagement et région (2026)",
+    "detail": "Le compte gratuit suffit pour commencer : les rooms d'initiation restent accessibles."
    }
   ],
   "categories": [
@@ -311,72 +318,112 @@
      {
       "name": "TryHackMe",
       "url": "https://tryhackme.com/",
-      "note": "guidé, débutant → avancé"
+      "note": "guidé, débutant → avancé",
+      "access": "freemium",
+      "provider": "TryHackMe",
+      "price": "free tier ; Premium ≈ 10–18 $/mois"
      },
      {
       "name": "Hack The Box Academy",
       "url": "https://academy.hackthebox.com/",
-      "note": "pentest, Active Directory"
+      "note": "modules notés, Active Directory",
+      "access": "freemium",
+      "provider": "Hack The Box",
+      "price": "modules gratuits limités ; Silver ≈ 30 $/mois (oct. 2026)"
      },
      {
       "name": "PortSwigger Web Security Academy",
       "url": "https://portswigger.net/web-security",
-      "note": "failles web, gratuit"
+      "note": "labs web interactifs, gratuit et sans limite",
+      "access": "gratuit",
+      "provider": "PortSwigger",
+      "detail": "Compte gratuit requis pour sauvegarder la progression ; les labs s'exécutent chez PortSwigger."
      },
      {
       "name": "picoCTF",
       "url": "https://picoctf.org/",
-      "note": "ludique, tous domaines"
+      "note": "CTF pédagogique, crypto / web / forensic / reverse",
+      "access": "gratuit",
+      "provider": "Carnegie Mellon University"
      },
      {
       "name": "Root-Me",
       "url": "https://www.root-me.org/",
-      "note": "en français"
+      "note": "300+ challenges, interface en français",
+      "access": "freemium",
+      "provider": "Root-Me",
+      "price": "majorité gratuite ; certains challenges et le classement avancé réservés aux abonnés"
      },
      {
       "name": "OverTheWire",
-      "url": "https://overthewire.org/wargames/bandit/",
-      "note": "wargames Linux"
+      "url": "https://overthewire.org/wargames/",
+      "note": "wargames Linux et réseau",
+      "access": "gratuit",
+      "provider": "OverTheWire"
      },
      {
       "name": "LetsDefend",
       "url": "https://letsdefend.io/",
-      "note": "blue team / SOC"
+      "note": "blue team / SOC, alertes à trier",
+      "access": "freemium",
+      "provider": "LetsDefend",
+      "price": "parcours d'introduction gratuit ; abonnement pour la suite"
      },
      {
       "name": "CyberDefenders",
       "url": "https://cyberdefenders.org/",
-      "note": "forensic, enquêtes"
+      "note": "enquêtes forensic sur captures réelles",
+      "access": "gratuit",
+      "provider": "CyberDefenders"
      },
      {
       "name": "crackmes.one",
       "url": "https://crackmes.one/",
-      "note": "reverse engineering"
+      "note": "reverse engineering, difficulté étiquetée",
+      "access": "gratuit",
+      "provider": "crackmes.one"
      },
      {
       "name": "pwn.college",
       "url": "https://pwn.college/",
-      "note": "dojo système, ceintures"
+      "note": "dojo système d'ASU : ceintures blanches → bleues",
+      "access": "gratuit",
+      "provider": "Arizona State University",
+      "repo": "pwncollege/dojo",
+      "detail": "Plateforme utilisée par les cours CSE 365 et CSE 466 d'ASU ; l'infrastructure est open source."
      },
      {
       "name": "CryptoHack",
       "url": "https://cryptohack.org/",
-      "note": "cryptographie"
+      "note": "cryptographie moderne par challenges",
+      "access": "gratuit",
+      "provider": "CryptoHack"
      },
      {
       "name": "OWASP MASTG",
       "url": "https://mas.owasp.org/MASTG/",
-      "note": "sécurité Android"
+      "note": "test d'applications mobiles (Android/iOS)",
+      "access": "gratuit",
+      "provider": "OWASP",
+      "repo": "OWASP/mastg"
      },
      {
       "name": "CloudGoat",
       "url": "https://github.com/RhinoSecurityLabs/cloudgoat",
-      "note": "sécurité cloud (AWS)"
+      "note": "scénarios AWS vulnérables par design",
+      "access": "gratuit",
+      "provider": "Rhino Security Labs",
+      "price": "outil gratuit ; les ressources AWS déployées sont facturées à ta charge",
+      "repo": "RhinoSecurityLabs/cloudgoat"
      },
      {
       "name": "Labtainers",
       "url": "https://nps.edu/web/c3o/labtainers",
-      "note": "réseau, laboratoires"
+      "note": "50+ labs réseau et cyber, VM prête à l'emploi",
+      "access": "gratuit",
+      "provider": "Naval Postgraduate School",
+      "repo": "mfthomps/Labtainers",
+      "detail": "Images de VM d'environ 5 Go (VirtualBox/VMware) ; aucun compte requis."
      }
     ]
    },
@@ -386,135 +433,202 @@
     "items": [
      {
       "name": "Exercism",
-      "url": "https://exercism.org/tracks/python",
-      "note": "Python, mentorat"
+      "url": "https://exercism.org/",
+      "note": "71 langages, mentorat humain",
+      "access": "gratuit",
+      "provider": "Exercism"
      },
      {
       "name": "CodinGame",
       "url": "https://www.codingame.com/",
-      "note": "algorithmes, jeux"
+      "note": "algorithmes en jeux, compétitions",
+      "access": "gratuit",
+      "provider": "CodinGame"
      },
      {
       "name": "Codewars",
       "url": "https://www.codewars.com/",
-      "note": "kata, rangs"
+      "note": "kata classés par rang",
+      "access": "gratuit",
+      "provider": "Codewars",
+      "price": "gratuit ; offres payantes optionnelles pour les équipes"
      },
      {
       "name": "SQL Murder Mystery",
       "url": "https://mystery.knightlab.com/",
-      "note": "enquête SQL"
+      "note": "enquête résolue en SQL",
+      "access": "gratuit",
+      "provider": "Northwestern University Knight Lab"
      },
      {
       "name": "Flexbox Froggy",
       "url": "https://flexboxfroggy.com/#fr",
-      "note": "CSS en jouant"
+      "note": "CSS flexbox en 24 niveaux",
+      "access": "gratuit",
+      "provider": "Flexbox Froggy"
      },
      {
       "name": "The Odin Project",
       "url": "https://www.theodinproject.com/",
-      "note": "vrais projets web"
+      "note": "parcours full-stack par projets",
+      "access": "gratuit",
+      "provider": "The Odin Project",
+      "repo": "TheOdinProject/theodinproject"
      },
      {
       "name": "cmdchallenge",
       "url": "https://cmdchallenge.com/",
-      "note": "une commande par défi"
+      "note": "une commande shell par défi",
+      "access": "gratuit",
+      "provider": "cmdchallenge"
      },
      {
       "name": "Learn Git Branching",
       "url": "https://learngitbranching.js.org/?locale=fr_FR",
-      "note": "Git visuel"
+      "note": "Git visualisé, en français",
+      "access": "gratuit",
+      "provider": "Peter Cottle",
+      "repo": "pcottle/learnGitBranching"
      },
      {
       "name": "SQLBolt",
       "url": "https://sqlbolt.com/",
-      "note": "SQL progressif"
+      "note": "SQL interactif, 18 leçons",
+      "access": "gratuit",
+      "provider": "SQLBolt"
      },
      {
       "name": "RegexOne",
       "url": "https://regexone.com/",
-      "note": "expressions régulières"
+      "note": "expressions régulières par exercices",
+      "access": "gratuit",
+      "provider": "RegexOne"
      }
     ]
    },
    {
     "id": "selfhost",
     "name": "À héberger soi-même (réseau isolé)",
+    "intro": "Play with Docker (labs.play-with-docker.com) a été arrêté le 1er mars 2026 : il est remplacé ici par Killercoda, toujours actif.",
     "items": [
      {
       "name": "OWASP Juice Shop",
       "url": "https://owasp.org/www-project-juice-shop/",
-      "note": "web + API"
+      "note": "l'application web vulnérable de référence",
+      "access": "gratuit",
+      "provider": "OWASP",
+      "repo": "juice-shop/juice-shop"
      },
      {
       "name": "DVWA",
       "url": "https://github.com/digininja/DVWA",
-      "note": "pentest web progressif"
+      "note": "pentest web progressif, niveaux de difficulté",
+      "access": "gratuit",
+      "provider": "Damn Vulnerable Web Application",
+      "repo": "digininja/DVWA"
      },
      {
       "name": "WebGoat",
       "url": "https://github.com/WebGoat/WebGoat",
-      "note": "apprentissage guidé"
+      "note": "leçons guidées sur les failles web",
+      "access": "gratuit",
+      "provider": "OWASP",
+      "repo": "WebGoat/WebGoat"
      },
      {
       "name": "Vulhub",
       "url": "https://github.com/vulhub/vulhub",
-      "note": "environnements Docker vulnérables"
+      "note": "environnements vulnérables prêts en Docker",
+      "access": "gratuit",
+      "provider": "Vulhub",
+      "repo": "vulhub/vulhub"
      },
      {
       "name": "DetectionLab",
       "url": "https://github.com/clong/DetectionLab",
-      "note": "détection"
+      "note": "lab de détection (Splunk, Sysmon, AD)",
+      "access": "gratuit",
+      "provider": "Chris Long",
+      "repo": "clong/DetectionLab",
+      "detail": "Dépôt dormant depuis mi-2024 : utilisable, mais vérifie la compatibilité de ton hyperviseur."
      },
      {
       "name": "Build Your Own X",
       "url": "https://github.com/codecrafters-io/build-your-own-x",
-      "note": "recréer Git, Redis, HTTP"
+      "note": "recréer Git, Redis, un shell, une base…",
+      "access": "gratuit",
+      "provider": "CodeCrafters",
+      "repo": "codecrafters-io/build-your-own-x"
      },
      {
-      "name": "The Algorithms",
+      "name": "The Algorithms — Python",
       "url": "https://github.com/TheAlgorithms/Python",
-      "note": "lire du code algorithmique"
+      "note": "algorithmes lisibles, testés",
+      "access": "gratuit",
+      "provider": "The Algorithms",
+      "repo": "TheAlgorithms/Python"
      },
      {
       "name": "Codecrafters",
       "url": "https://codecrafters.io/",
-      "note": "construire un serveur, un shell"
+      "note": "construire Redis ou un serveur HTTP, étape par étape",
+      "access": "freemium",
+      "provider": "Codecrafters",
+      "price": "parcours gratuits limités ; abonnement pour les builds illimités"
      },
      {
-      "name": "Play with Docker",
-      "url": "https://labs.play-with-docker.com/",
-      "note": "Docker sans installer"
+      "name": "Killercoda",
+      "url": "https://killercoda.com/playgrounds/scenario/docker",
+      "note": "terminal Docker/Kubernetes dans le navigateur",
+      "access": "freemium",
+      "provider": "Killercoda",
+      "price": "gratuit : sessions d'1 h ; PLUS ≈ 10 $/mois pour 4 h et 3 sessions"
      },
      {
       "name": "SadServers",
       "url": "https://sadservers.com/",
-      "note": "dépannage DevOps"
+      "note": "dépannage DevOps chronométré",
+      "access": "freemium",
+      "provider": "SadServers",
+      "price": "scénarios gratuits quotidiens ; abonnement pour l'accès illimité"
      }
     ]
    },
    {
     "id": "games",
-    "name": "Jeux (compléments, parfois payants)",
+    "name": "Jeux (compléments, payants)",
+    "intro": "Des compléments pédagogiques, pas des substituts aux laboratoires : le transfert vers un vrai terminal reste limité.",
     "items": [
      {
       "name": "Hacknet",
       "url": "https://hacknet-os.com/",
-      "note": "simulation narrative"
+      "note": "simulation narrative en terminal",
+      "access": "payant",
+      "provider": "Team Fractal Alligator",
+      "price": "9,99 $ (Steam, GOG)"
      },
      {
       "name": "Grey Hack",
       "url": "https://greyhackgame.com/",
-      "note": "terminal, réseaux, scripting"
+      "note": "MMO de hacking, scripting intégré",
+      "access": "payant",
+      "provider": "Grey Hack Studio",
+      "price": "19,99 $ (accès anticipé)"
      },
      {
       "name": "Turing Complete",
       "url": "https://store.steampowered.com/app/1444480/Turing_Complete/",
-      "note": "des portes logiques au CPU"
+      "note": "des portes NAND à l'architecture CPU",
+      "access": "payant",
+      "provider": "LevelHead",
+      "price": "19,99 $ (sorti le 2 oct. 2021)"
      },
      {
       "name": "SHENZHEN I/O",
       "url": "https://www.zachtronics.com/shenzhen-io/",
-      "note": "programmer des circuits"
+      "note": "programmation de circuits électroniques",
+      "access": "payant",
+      "provider": "Zachtronics"
      }
     ]
    }
@@ -541,6 +655,11 @@
     "label": "Refaire sans aide et documenter la solution"
    }
   ],
-  "safety": "N'expose jamais un laboratoire vulnérable à Internet : réseau local isolé ou plateforme autorisée, autorisation écrite hors de chez soi."
+  "safety": "N'expose jamais un laboratoire vulnérable à Internet : réseau local isolé ou plateforme autorisée, autorisation écrite hors de chez soi.",
+  "sources": [
+   "api.github.com/repos/{owner}/{repo} — étoiles, licence, dernière mise à jour, archivage",
+   "Pages officielles des plateformes pour l'accès et les tarifs"
+  ],
+  "checked_at": "2026-10-27"
  }
 }

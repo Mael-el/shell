@@ -65,6 +65,25 @@ La page rappelle aussi la méthode de travail en cinq temps (comprendre, cherche
 terminer, refaire sans aide) : l'IA sert de mentor, pas de solution immédiate. Aucune
 plateforme externe n'est automatisée — c'est l'apprenant qui coche, l'app calcule.
 
+### Des données réelles, pas des étiquettes inventées
+
+Chaque ressource porte son **accès** (gratuit / freemium / payant), son **fournisseur** et,
+quand elle est payante, son **prix vérifié**. Pour les dépôts GitHub, l'API est interrogée
+directement : étoiles, licence, dernière mise à jour, archivage.
+
+```bash
+python3 scripts/check_resources.py              # rafraîchit + teste la joignabilité
+python3 scripts/check_resources.py --only-github  # sans test HTTP (réseau restreint)
+```
+
+Le résultat est écrit dans `backend/curriculum/resources-verified.json` et affiché dans
+l'interface avec la date de vérification. Le script distingue honnêtement trois états :
+métadonnées GitHub récupérées, URL joignable, ou **non vérifiée** quand l'environnement n'a
+pas de sortie réseau — jamais « valide » par défaut.
+
+L'XP du dojo est réelle elle aussi : elle s'ajoute au score de la session et au niveau
+(`xp_missions`, `xp_dojo` et `score` sont exposés séparément par l'API).
+
 ## Architecture
 
 ```
@@ -73,11 +92,13 @@ backend/
   curriculum.py           chargement + validation + sérialisation du contenu
   roadmap.py              plan d'entraînement 12 semaines (6 niveaux, 24 tâches)
   curriculum/level-*.json contenu pédagogique (7 fichiers, 36 missions)
-  curriculum/roadmap-12-semaines.json  plan du dojo + catalogue de 38 ressources
+  curriculum/roadmap-12-semaines.json  plan du dojo + catalogue de ressources
+  curriculum/resources-verified.json   métadonnées vérifiées (étoiles, licence, dates)
 frontend/shellforge-app/  React 19 + Vite (parcours, mission, console, progression)
   src/index.css           jetons de design (palette terminal, typographie mono)
   src/App.css             composants : panneaux, console, vérification, badges
 scripts/selfcheck_curriculum.py  auto-contrôle : joue chaque solution et vérifie les preuves
+scripts/check_resources.py       rafraîchit les métadonnées réelles des ressources (GitHub API)
 scripts/dev.sh            démarre backend + frontend en une commande
 tests/test_api_smoke.py   tests de l'API et du moteur de laboratoire
 frontend/shellforge-app/tests/ui-smoke.mjs  fumée UI (jsdom, 5 écrans, contre l'API réelle)
@@ -148,7 +169,7 @@ prévisualisation. Pour appeler un backend distant, définir `VITE_API_URL`.
 
 ```bash
 source .venv/bin/activate
-pytest -q                                    # API + laboratoire + dojo (12 tests)
+pytest -q                                    # API + laboratoire + dojo (14 tests)
 python3 scripts/selfcheck_curriculum.py      # les 36 missions, solutions comprises
 cd frontend/shellforge-app
 npm run lint                                 # oxlint

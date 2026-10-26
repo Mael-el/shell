@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ensureSession } from '../session'
 
+const ACCESS_LABEL = { gratuit: 'gratuit', freemium: 'freemium', payant: 'payant' }
+
+const formatStars = (stars) => {
+  if (typeof stars !== 'number') return null
+  if (stars >= 1000) return `${(stars / 1000).toFixed(1).replace('.0', '').replace('.', ',')}k★`
+  return `${stars}★`
+}
+
+const formatDate = (iso) => {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 const Dojo = () => {
   const [sessionId, setSessionId] = useState(null)
   const [data, setData] = useState(null)
@@ -55,6 +70,7 @@ const Dojo = () => {
   if (!data) return null
 
   const earned = data.badges.filter((badge) => badge.earned)
+  const verification = data.verification
 
   return (
     <main className="page dojo-page">
@@ -71,7 +87,7 @@ const Dojo = () => {
           </div>
           <div>
             <strong>{data.xp_earned}</strong>
-            <span>XP dojo</span>
+            <span>XP comptés</span>
           </div>
           <div>
             <strong>{earned.length}/{data.badges.length}</strong>
@@ -104,7 +120,13 @@ const Dojo = () => {
               <span className="tag">{item.domain}</span>
               <strong>{item.name}</strong>
               <span>{item.why}</span>
-              <span className="trio-link">ouvrir ↗</span>
+              <span className="trio-foot">
+                <span className={`access-tag access-${item.access}`}>
+                  {ACCESS_LABEL[item.access] || item.access}
+                </span>
+                {item.price && <span className="trio-price">{item.price}</span>}
+                <span className="trio-link">ouvrir ↗</span>
+              </span>
             </a>
           ))}
         </div>
@@ -193,19 +215,55 @@ const Dojo = () => {
       <section className="dojo-resources">
         <h2 className="dojo-section-title">Ressources</h2>
         <p className="alert alert-warn dojo-safety">{data.resources.safety}</p>
+        {verification?.checked_at && (
+          <p className="dojo-verified">
+            <span className="verified-dot" aria-hidden="true" />
+            Données vérifiées le {formatDate(verification.checked_at)} ·{' '}
+            {verification.counts.github_checked} dépôts GitHub interrogés en direct (étoiles,
+            licence, dernière mise à jour)
+            {verification.counts.http_checked
+              ? ` · ${verification.counts.http_reachable}/${verification.counts.resources} URL joignables`
+              : ' · joignabilité HTTP non testée dans cet environnement'}
+            .
+          </p>
+        )}
+
         <div className="resource-grid">
           {data.resources.categories.map((category) => (
             <article key={category.id} className="resource-card">
               <h3>{category.name}</h3>
+              {category.intro && <p className="resource-intro">{category.intro}</p>}
               <ul>
-                {category.items.map((item) => (
-                  <li key={`${category.id}-${item.name}`}>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      {item.name}
-                      <small>{item.note}</small>
-                    </a>
-                  </li>
-                ))}
+                {category.items.map((item) => {
+                  const meta = item.verified?.github
+                  const dormant = meta && meta.archived
+                  return (
+                    <li key={`${category.id}-${item.name}`} className="resource-item">
+                      <a href={item.url} target="_blank" rel="noreferrer" className="resource-link">
+                        <span className="resource-name">
+                          {item.name}
+                          <span className={`access-tag access-${item.access}`}>
+                            {ACCESS_LABEL[item.access] || item.access}
+                          </span>
+                          {dormant && <span className="access-tag access-dormant">archivé</span>}
+                        </span>
+                        <small>{item.note}</small>
+                      </a>
+                      <div className="resource-meta">
+                        <span className="resource-provider">{item.provider}</span>
+                        {meta && (
+                          <span className="resource-stats">
+                            {formatStars(meta.stars)}
+                            {meta.license && meta.license !== 'NOASSERTION' ? ` · ${meta.license}` : ''}
+                            {meta.pushed_at ? ` · maj ${formatDate(meta.pushed_at)}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {item.price && <p className="resource-price">{item.price}</p>}
+                      {item.detail && <p className="resource-detail">{item.detail}</p>}
+                    </li>
+                  )
+                })}
               </ul>
             </article>
           ))}

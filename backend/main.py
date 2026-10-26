@@ -398,6 +398,43 @@ def dojo_progress_map(session_id: str) -> dict[str, dict]:
     return {row["task_id"]: row for row in rows}
 
 
+def dojo_xp(session_id: str) -> int:
+    """XP gagné dans le dojo (tâches cochées), séparé de l'XP des missions."""
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(score), 0) AS xp FROM dojo_progress WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    return int(row["xp"] or 0)
+
+
+def recompute_session_score(session_id: str) -> dict:
+    """Recalcule le score total (missions + dojo) et le niveau de la session."""
+    conn = get_db()
+    try:
+        mission_xp = conn.execute(
+            "SELECT COALESCE(SUM(score), 0) AS xp FROM mission_progress WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()["xp"]
+        dojo = conn.execute(
+            "SELECT COALESCE(SUM(score), 0) AS xp FROM dojo_progress WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()["xp"]
+        total = int(mission_xp or 0) + int(dojo or 0)
+        level = calculate_level_from_xp(total)
+        exec_sql(
+            conn,
+            "UPDATE sessions SET score = ?, level = ?, last_seen_at = ? WHERE id = ?",
+            (total, level, datetime.now(timezone.utc).isoformat(timespec="seconds"), session_id),
+        )
+    finally:
+        conn.close()
+    return {"mission_xp": int(mission_xp or 0), "dojo_xp": int(dojo or 0), "total_xp": total, "level": level}
+
+
 def build_roadmap(session_id: str | None = None) -> dict:
     """Vue du plan d'entraînement, enrichie de l'avancement de la session."""
     rows = dojo_progress_map(session_id) if session_id else {}
@@ -467,18 +504,11 @@ def record_attempt(session_id: str, mission: dict, passed: bool) -> dict:
                 now,
             ),
         )
-        total_xp = conn.execute(
-            "SELECT COALESCE(SUM(score), 0) AS xp FROM mission_progress WHERE session_id = ?",
-            (session_id,),
-        ).fetchone()["xp"]
-        level = calculate_level_from_xp(total_xp)
-        exec_sql(
-            conn,
-            "UPDATE sessions SET score = ?, level = ?, last_seen_at = ? WHERE id = ?",
-            (total_xp, level, now, session_id),
-        )
     finally:
         conn.close()
+    totals = recompute_session_score(session_id)
+    total_xp = totals["total_xp"]
+    level = totals["level"]
     return {
         "score_awarded": score,
         "already_completed": already_completed,
@@ -772,12 +802,15 @@ async def update_roadmap_progress(payload: RoadmapProgressRequest):
         conn.close()
 
     tracked = bool(row and row["completed_at"])
+    totals = recompute_session_score(payload.session_id)
     payload_out = build_roadmap(payload.session_id)
     payload_out.update(
         {
             "task_id": task["id"],
             "done": tracked,
             "score_awarded": int(row["score"] or 0) if tracked else 0,
+            "session_total_xp": totals["total_xp"],
+            "session_level": totals["level"],
         }
     )
     return payload_out
@@ -786,12 +819,10 @@ async def update_roadmap_progress(payload: RoadmapProgressRequest):
 @app.get("/api/resources")
 async def get_resources():
     """Catalogue de ressources externes : laboratoires, programmation, auto-hébergement, jeux."""
-    data = roadmap.load_roadmap()
+    resources = roadmap.decorate_resources(roadmap.load_roadmap()["resources"])
     return {
-        "recommended": data["resources"]["recommended"],
-        "categories": data["resources"]["categories"],
-        "method": data["resources"]["method"],
-        "safety": data["resources"]["safety"],
+        **resources,
+        "verification": roadmap.verification_summary(),
     }
 
 
@@ -816,11 +847,14 @@ async def get_session(session_id: str):
     """Valide l'existence d'une session (utilisé par le front pour détecter une session périmée)."""
     session = require_session(session_id)
     rows = session_progress_map(session_id)
+    totals = recompute_session_score(session_id)
     return {
         "session_id": session_id,
         "user_id": session.get("user_id"),
-        "score": session.get("score", 0),
-        "level": session.get("level", 1),
+        "score": totals["total_xp"],
+        "level": totals["level"],
+        "xp_missions": totals["mission_xp"],
+        "xp_dojo": totals["dojo_xp"],
         "started_at": session.get("started_at"),
         "completed_missions": sum(1 for row in rows.values() if row["completed"]),
     }
@@ -945,14 +979,18 @@ async def get_summary(session_id: str):
 
     total_missions = len(data["order"])
     total_points = sum(m["points"] for m in data["missions"].values())
-    xp = sum(row["score"] for row in rows.values())
+    mission_xp = sum(row["score"] for row in rows.values())
+    dojo_points = dojo_xp(session_id)
+    xp = mission_xp + dojo_points
     next_mission = next((mid for mid in data["order"] if mid not in completed), None)
     return {
         "session_id": session_id,
         "user_id": session.get("user_id"),
         "score": xp,
         "xp_earned": xp,
-        "xp_total": total_points,
+        "xp_missions": mission_xp,
+        "xp_dojo": dojo_points,
+        "xp_total": total_points + roadmap.total_xp(),
         "level": calculate_level_from_xp(xp),
         "completed_missions": len(completed),
         "completed_challenges": len(completed),

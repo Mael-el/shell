@@ -259,3 +259,53 @@ def test_dojo_rejects_unknown_task_and_session(tmp_path):
     ).status_code == 404
     assert client.get("/api/roadmap", params={"session_id": "session-absente"}).status_code == 404
     assert client.get("/api/resources").json()["safety"]
+
+
+def test_resource_catalogue_carries_verified_metadata(tmp_path):
+    client = _prepare_env(tmp_path)
+
+    payload = client.get("/api/resources").json()
+    categories = {category["id"]: category for category in payload["categories"]}
+    assert set(categories) == {"labs", "code", "selfhost", "games"}
+
+    items = [item for category in payload["categories"] for item in category["items"]]
+    assert all(item["access"] in {"gratuit", "freemium", "payant"} for item in items)
+    assert all(item["provider"] for item in items)
+
+    # Play with Docker a fermé en mars 2026 : il ne doit plus figurer au catalogue.
+    urls = {item["url"] for item in items}
+    assert not any("play-with-docker" in url for url in urls)
+
+    juice = next(item for item in items if item["name"] == "OWASP Juice Shop")
+    assert juice["verified"]["github"]["stars"] > 1000
+    assert juice["verified"]["github"]["license"] == "MIT"
+    assert juice["verified"]["checked_at"]
+
+    verification = payload["verification"]
+    assert verification["counts"]["github_checked"] >= 10
+    assert verification["checked_at"]
+
+
+def test_dojo_xp_counts_towards_the_session_score(tmp_path):
+    client = _prepare_env(tmp_path)
+    session_id = _session(client)
+
+    client.post("/api/roadmap/progress", json={"session_id": session_id, "task_id": "d1-t1"})
+    summary = client.get(f"/api/sessions/{session_id}/summary").json()
+    assert summary["xp_dojo"] == 60
+    assert summary["xp_missions"] == 0
+    assert summary["score"] == 60
+    assert summary["level"] == 1
+
+    # Une mission validée ne doit pas écraser l'XP du dojo.
+    mission = main.curriculum.get_mission("m01-01")
+    client.post(
+        "/api/labs/run",
+        json={"session_id": session_id, "command": mission["lab"]["solution"], "mission_id": "m01-01"},
+    )
+    client.post("/api/missions/m01-01/verify", json={"session_id": session_id})
+    summary = client.get(f"/api/sessions/{session_id}/summary").json()
+    assert summary["xp_missions"] == mission["points"]
+    assert summary["xp_dojo"] == 60
+    assert summary["score"] == mission["points"] + 60
+    assert client.get(f"/api/sessions/{session_id}").json()["xp_dojo"] == 60

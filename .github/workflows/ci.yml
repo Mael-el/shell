@@ -31,6 +31,12 @@ jobs:
       - name: Vérifier les 36 missions de bout en bout
         run: python scripts/selfcheck_curriculum.py
 
+      # Interroge api.github.com pour les 13 dépôts du catalogue (étoiles, licence, archivage).
+      # Non bloquant : le quota anonyme de l'API GitHub est partagé entre les runners.
+      - name: Rafraîchir les métadonnées des ressources (informatif)
+        continue-on-error: true
+        run: python scripts/check_resources.py --only-github
+
   frontend:
     name: Frontend · lint, build & fumée UI
     runs-on: ubuntu-latest

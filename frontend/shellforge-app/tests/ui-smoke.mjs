@@ -161,6 +161,9 @@ async function main() {
       '1/24',
       'Badges',
       'Ressources',
+      'Données vérifiées le',
+      'dépôts GitHub interrogés',
+      'freemium',
     ])
     await visit('/progression', ['Ta progression', 'Activité récente'])
 

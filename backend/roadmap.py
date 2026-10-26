@@ -14,8 +14,10 @@ from functools import lru_cache
 from pathlib import Path
 
 ROADMAP_PATH = Path(__file__).resolve().parent / "curriculum" / "roadmap-12-semaines.json"
+VERIFIED_PATH = Path(__file__).resolve().parent / "curriculum" / "resources-verified.json"
 
 TASK_ID_RE = re.compile(r"^d[1-6]-t[1-4]$")
+ACCESS_KINDS = {"gratuit", "freemium", "payant"}
 
 
 def _fail(message: str) -> None:
@@ -45,6 +47,9 @@ def _validate(data: dict) -> None:
                     _fail(f"{tid} : champ '{key}' manquant")
             if not isinstance(task["xp"], int) or task["xp"] <= 0:
                 _fail(f"{tid} : XP invalide")
+            access = task.get("access")
+            if access and access not in ACCESS_KINDS:
+                _fail(f"{tid} : accès '{access}' inconnu")
             resource = task.get("resource")
             if resource and not str(resource.get("url", "")).startswith("https://"):
                 _fail(f"{tid} : ressource sans URL HTTPS")
@@ -119,7 +124,55 @@ def public_payload(completed: set[str] | None = None, scores: dict[str, int] | N
         "weeks": 12,
         "badges": build_badges(levels_payload, completed),
         "levels": levels_payload,
-        "resources": data["resources"],
+        "resources": decorate_resources(data["resources"]),
+        "verification": verification_summary(),
+    }
+
+
+@lru_cache(maxsize=1)
+def load_verified() -> dict:
+    """Overlay produit par scripts/check_resources.py (vide s'il n'a jamais tourné)."""
+    if not VERIFIED_PATH.exists():
+        return {"resources": {}, "counts": {}, "checked_at": None}
+    return json.loads(VERIFIED_PATH.read_text(encoding="utf-8"))
+
+
+def _decorate_item(entry: dict) -> dict:
+    verified = load_verified()["resources"].get(entry["url"], {})
+    github = verified.get("github") or {}
+    payload = dict(entry)
+    payload["verified"] = {
+        "checked_at": verified.get("checked_at"),
+        "http_status": verified.get("http_status"),
+        "network_error": verified.get("network_error"),
+        "github": {
+            key: github.get(key)
+            for key in ("stars", "license", "pushed_at", "archived", "language", "html_url")
+        }
+        if github and not github.get("error")
+        else None,
+        "github_error": github.get("error"),
+    }
+    return payload
+
+
+def decorate_resources(resources: dict) -> dict:
+    """Attache à chaque ressource les données réellement vérifiées (GitHub, HTTP)."""
+    payload = dict(resources)
+    payload["recommended"] = [_decorate_item(item) for item in resources.get("recommended", [])]
+    payload["categories"] = [
+        {**category, "items": [_decorate_item(item) for item in category.get("items", [])]}
+        for category in resources.get("categories", [])
+    ]
+    return payload
+
+
+def verification_summary() -> dict:
+    verified = load_verified()
+    return {
+        "checked_at": verified.get("checked_at"),
+        "method": verified.get("method", {}),
+        "counts": verified.get("counts", {}),
     }
 
 
