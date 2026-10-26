@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+"""SHELLFORGE Backend - FastAPI Application for Bash Learning Platform"""
+
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+import sqlite3
+import uuid
+import os
+
+app = FastAPI(
+    title="SHELLFORGE API",
+    description="Plateforme d'apprentissage interactive de Bash/Linux",
+    version="1.0.0"
+)
+
+# CORS pour accès local
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DB_PATH = "/home/shadow/shellforge/database/shellforge.db"
+
+def get_db():
+    """Obtenir une connexion à la base de données (nouvelle connexion par requête)."""
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+@app.on_event("startup")
+def init_db():
+    """Initialiser la base de données au démarrage."""
+    conn = get_db()
+    c = conn.cursor()
+    
+    # Drop tables if they exist
+    c.execute("DROP TABLE IF EXISTS progress")
+    c.execute("DROP TABLE IF EXISTS challenges")
+    c.execute("DROP TABLE IF EXISTS sessions")
+    c.execute("DROP TABLE IF EXISTS modules")
+    
+    # Table des sessions
+    c.execute(''
+''''
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT,
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            status TEXT DEFAULT 'active',
+            score INTEGER DEFAULT 0,
+            level INTEGER DEFAULT 1
+        )
+    '')
+    
+    # Table des modules
+    c.execute(''
+''''
+        CREATE TABLE IF NOT EXISTS modules (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            description TEXT,
+            level INTEGER,
+            category TEXT,
+            xp_reward INTEGER,
+            difficulty TEXT DEFAULT 'medium',
+            active BOOLEAN DEFAULT TRUE
+        )
+    '')
+    
+    # Table des challenges (9 colonnes: id, module_id, title, description, command, expected_output, validation, points, difficulty)
+    c.execute(''
+''''
+        CREATE TABLE IF NOT EXISTS challenges (
+            id TEXT PRIMARY KEY,
+            module_id TEXT,
+            title TEXT,
+            description TEXT,
+            command TEXT,
+            expected_output TEXT,
+            validation TEXT,
+            points INTEGER DEFAULT 100,
+            difficulty TEXT DEFAULT 'medium'
+        )
+    '')
+    
+    # Table de la progression
+    c.execute(''
+''''
+        CREATE TABLE IF NOT EXISTS progress (
+            id TEXT PRIMARY KEY,
+            session_id TEXT,
+            challenge_id TEXT,
+            attempted BOOLEAN DEFAULT FALSE,
+            correct BOOLEAN DEFAULT FALSE,
+            attempts INTEGER DEFAULT 0,
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP
+        )
+    '')
+    
+    # Modules par défaut (7 modules, IDs m01-m07)
+    default_modules = [
+        ("m01", "Introduction au Shell", "Premiers pas dans Bash", 1, "basics", 100, "easy", True),
+        ("m02", "Variables et Arguments", "Gérer les variables et les paramètres", 1, "basics", 150, "easy", True),
+        ("m03", "Conditions et Logique", "Structures if/then/else et tests", 1, "basics", 200, "medium", True),
+        ("m04", "Boucles", "Boucles for, while et until", 1, "basics", 200, "medium", True),
+        ("m05", "Redirections", "Manipuler stdout, stderr et pipes", 2, "intermediate", 250, "medium", True),
+        ("m06", "Fonctions", "Créer et utiliser des fonctions Bash", 2, "intermediate", 300, "hard", True),
+        ("m07", "Expressions Régulières", "Utiliser grep et sed avec regex", 3, "advanced", 350, "hard", True),
+    ]
+    
+    for m in default_modules:
+        c.execute(
+            "INSERT OR IGNORE INTO modules (id, title, description, level, category, xp_reward, difficulty, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            m
+        )
+    
+    # Challenges par défaut (21 challenges, 3 par module)
+    # Format: (id, module_id, title, description, command, expected_output, validation, points, difficulty)
+    default_challenges = [
+        # Level 01: Introduction (c01-c03) - contains validation
+        ("c01", "m01", "Premier script Bash", "./hello.sh \"World\"", "Bonjour World!", "contains", 100, "easy"),
+        ("c02", "m01", "Afficher l'aide", "help ls", "Usage: ls", "contains", 100, "easy"),
+        ("c03", "m01", "Chemin absolu vs relatif", "./paths.sh /home", "/home", "contains", 100, "easy"),
+        
+        # Level 02: Variables (c04-c06) - exact validation
+        ("c04", "m02", "Utiliser des variables", "./vars.sh arg1", "La valeur est: arg1", "exact", 150, "easy"),
+        ("c05", "m02", "Définir une variable", "./varassign.sh", "Hello", "exact", 150, "easy"),
+        ("c06", "m02", "Longueur de chaîne", "./length.sh Bonjour", "9", "exact", 150, "easy"),
+        
+        # Level 03: Conditions (c07-c09) - exact validation
+        ("c07", "m03", "Tester si un fichier existe", "./check.sh /etc/hosts", "/etc/hosts existe", "exact", 200, "medium"),
+        ("c08", "m03", "Comparaison de nombres", "./compare.sh 10 5", "10 est plus grand que 5", "exact", 200, "medium"),
+        ("c09", "m03", "Condition utilisateur", "./welcome.sh", "Bonjour [nom]", "exact", 200, "medium"),
+        
+        # Level 04: Boucles (c10-c12) - exact validation
+        ("c10", "m04", "Boucle for nombres", "./forloop.sh", "1\\n2\\n3\\n4\\n5", "exact", 200, "medium"),
+        ("c11", "m04", "Boucle while compteur", "./whileloop.sh", "0\\n1\\n2\\n3", "exact", 200, "medium"),
+        ("c12", "m04", "Boucle until", "./untilloop.sh", "Compteur: 5", "exact", 200, "medium"),
+        
+        # Level 05: Redirections (c13-c15) - contains validation
+        ("c13", "m05", "Rediriger stdout vers fichier", "./redirect_std.sh > output.log", "[CONTENU]", "contains", 250, "medium"),
+        ("c14", "m05", "Append dans un fichier", "./append.sh >> errors.log", "[ERREUR]", "contains", 250, "medium"),
+        ("c15", "m05", "Pipes basiques", "cat test.txt | wc -l", "3", "contains", 250, "medium"),
+        
+        # Level 06: Fonctions (c16-c18) - exact validation
+        ("c16", "m06", "Fonction addition", "./func_add.sh", "add 3 4", "exact", 300, "hard"),
+        ("c17", "m06", "Fonction avec paramètres", "./func_len.sh test", "4", "exact", 300, "hard"),
+        ("c18", "m06", "Fonction retour", "./func_ret.sh", "Resultat: 7", "exact", 300, "hard"),
+        
+        # Level 07: Expressions Régulières (c19-c21) - contains validation
+        ("c19", "m07", "Recherche grep basique", "grep -r ERROR /var/log/", "ligne(s) trouvées", "contains", 350, "hard"),
+        ("c20", "m07", "Remplacer avec sed", "sed -i 's/old/new/g' text.txt", "Remplacement effectué", "contains", 350, "hard"),
+        ("c21", "m07", "Pattern complexe grep", "grep -E user@domain emails.txt", "trouvé@domaine", "contains", 350, "hard"),
+    ]
+    
+    for challenge in default_challenges:
+        c.execute(
+            "INSERT OR IGNORE INTO challenges (id, module_id, title, description, command, expected_output, validation, points, difficulty) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            challenge
+        )
+    
+    # Session par défaut
+    default_session_id = "session-001"
+    c.execute(
+        "INSERT OR IGNORE INTO sessions (id, user_id) VALUES (?, ?)",
+        (default_session_id, "shellforge-user")
+    )
+    
+    conn.commit()
+    conn.close()
+
+# --- Modèles Pydantic ---
+
+class SessionCreate(BaseModel):
+    user_id: str
+
+class ChallengeSubmission(BaseModel):
+    session_id: str
+    challenge_id: str
+    output: str
+
+# --- Routes API ---
+
+@app.get("/")
+async def root():
+    return {"message": "Bienvenue sur SHELLFORGE API", "version": "1.0.0"}
+
+@app.get("/api/modules")
+async def list_modules(db=Depends(get_db)):
+    """Lister tous les modules disponibles."""
+    c = db.cursor()
+    c.execute("SELECT * FROM modules WHERE active = TRUE ORDER BY level ASC")
+    modules = c.fetchall()
+    return {"modules": [dict(m) for m in modules]}
+
+@app.get("/api/modules/{module_id}/challenges")
+async def list_challenges(module_id: str, db=Depends(get_db)):
+    """Lister les défis d'un module."""
+    c = db.cursor()
+    c.execute("SELECT * FROM challenges WHERE module_id = ? ORDER BY difficulty ASC, points ASC", (module_id,))
+    challenges = c.fetchall()
+    return {"challenges": [dict(ch) for ch in challenges]}
+
+@app.post("/api/sessions")
+async def create_session(session: SessionCreate, db=Depends(get_db)):
+    """Créer une nouvelle session d'apprentissage."""
+    session_id = str(uuid.uuid4())
+    c = db.cursor()
+    c.execute(
+        "INSERT INTO sessions (id, user_id) VALUES (?, ?)",
+        (session_id, session.user_id)
+    )
+    db.commit()
+    return {"session_id": session_id, "message": "Session créée avec succès"}
+
+@app.post("/api/submissions")
+async def submit_challenge(submission: ChallengeSubmission, db=Depends(get_db)):
+    """Valider une réponse utilisateur."""
+    session_id = submission.session_id
+    challenge_id = submission.challenge_id
+    output = submission.output
+    
+    # Récupérer le défi attendu
+    c = db.cursor()
+    c.execute("SELECT * FROM challenges WHERE id = ?", (challenge_id,))
+    challenge = c.fetchone()
+    
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge introuvable")
+    
+    # Valider la sortie selon le type de validation
+    is_correct = False
+    
+    if challenge["validation"] == "exact":
+        is_correct = output.strip() == challenge["expected_output"].strip()
+    elif challenge["validation"] == "contains":
+        is_correct = challenge["expected_output"] in output
+    else:
+        is_correct = output.strip() == challenge["expected_output"].strip()
+    
+    # Mettre à jour la progression
+    c.execute(
+        "SELECT * FROM progress WHERE session_id = ? AND challenge_id = ?",
+        (session_id, challenge_id)
+    )
+    existing = c.fetchone()
+    
+    if existing:
+        c.execute(
+            """UPDATE progress 
+               SET attempted = TRUE, correct = ?, attempts = attempts + 1, 
+                   completed_at = CURRENT_TIMESTAMP 
+               WHERE session_id = ? AND challenge_id = ?""",
+            (int(is_correct), session_id, challenge_id)
+        )
+    else:
+        c.execute(
+            """INSERT INTO progress (id, session_id, challenge_id, attempted, correct, attempts, started_at) 
+               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (str(uuid.uuid4()), session_id, challenge_id, True, is_correct, 1)
+        )
+    
+    # Mettre à jour le score de la session
+    if is_correct:
+        c.execute("UPDATE sessions SET score = score + ? WHERE id = ?", (challenge["points"], session_id))
+    
+    db.commit()
+    db.close()
+    
+    return {
+        "challenge_id": challenge_id,
+        "correct": is_correct,
+        "points_earned": challenge["points"] if is_correct else 0,
+        "expected_output": challenge["expected_output"] if not is_correct else None
+    }
+
+@app.get("/api/sessions/{session_id}/progress")
+async def get_progress(session_id: str, db=Depends(get_db)):
+    """Récupérer la progression d'une session."""
+    c = db.cursor()
+    c.execute(
+        """SELECT p.*, ch.title as challenge_title, ch.points as challenge_points 
+           FROM progress p 
+           JOIN challenges ch ON p.challenge_id = ch.id 
+           WHERE p.session_id = ? 
+           ORDER BY p.started_at DESC""",
+        (session_id,)
+    )
+    progress = c.fetchall()
+    return {"progress": [dict(p) for p in progress]}
+
+@app.get("/api/sessions/{session_id}/stats")
+async def get_stats(session_id: str, db=Depends(get_db)):
+    """Statistiques de session."""
+    c = db.cursor()
+    c.execute(
+        """SELECT 
+           COUNT(*) as total,
+           SUM(CASE WHEN correct THEN 1 ELSE 0 END) as correct,
+           SUM(CASE WHEN NOT correct THEN 1 ELSE 0 END) as incorrect,
+           AVG(attempts) as avg_attempts
+           FROM progress WHERE session_id = ?""",
+        (session_id,)
+    )
+    stats = c.fetchone()
+    return {"stats": dict(stats) if stats else {"total": 0, "correct": 0, "incorrect": 0, "avg_attempts": 0}}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

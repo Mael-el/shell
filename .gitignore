@@ -1,0 +1,26 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/shellforge-app/dist/
+npm-debug.log*
+
+# Base de données SQLite
+*.db
+*.db-shm
+*.db-wal
+database/*.db*
+
+# Environnement
+.env
+.env.local
+
+# Divers
+.DS_Store
+*.log
