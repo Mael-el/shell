@@ -122,8 +122,10 @@ npm run test:ui                              # fumée UI (API requise sur :8000)
 
 `npm run test:ui` monte la vraie application React dans jsdom via le serveur Vite, visite
 `/`, `/niveau/1`, `/module/m01`, `/mission/m01-01` (cours, laboratoire, fichiers) et
-`/progression`, et échoue sur toute erreur console. La CI GitHub Actions exécute ces
-quatre vérifications à chaque push et pull request.
+`/progression`, et échoue sur toute erreur console. Un scénario dédié vérifie aussi qu'une
+session devenue invalide (base réinitialisée) est remplacée sans écran d'erreur.
+La CI GitHub Actions (`.github/workflows/ci.yml`) rejoue ces vérifications à chaque push
+sur `main` et sur chaque pull request.
 
 ## Isolation des laboratoires
 
