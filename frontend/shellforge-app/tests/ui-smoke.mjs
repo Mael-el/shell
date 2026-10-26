@@ -61,7 +61,20 @@ async function waitFor(predicate, label, timeout = 8000) {
   throw new Error(`Délai dépassé en attendant : ${label}\n  Page affichée : ${seen}`)
 }
 
+async function ensureApi() {
+  try {
+    const response = await realFetch(`${API}/api/health`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  } catch (error) {
+    throw new Error(
+      `API injoignable sur ${API} (${error.message}).\n` +
+        'Démarre-la avec : .venv/bin/uvicorn main:app --app-dir backend --port 8000',
+    )
+  }
+}
+
 async function main() {
+  await ensureApi()
   const dom = setupDom()
   const server = await createServer({
     root: ROOT,
@@ -115,7 +128,15 @@ async function main() {
       }
     }
 
+    // Scénario « base réinitialisée » : le navigateur garde une session qui n'existe plus.
+    const staleId = 'session-perimee-0001'
+    localStorage.setItem('shellforge_session_id', staleId)
     await visit('/', ['SHELLFORGE', 'Fondations', 'missions validées'])
+    const recovered = localStorage.getItem('shellforge_session_id')
+    if (!recovered || recovered === staleId) {
+      throw new Error('Session périmée non remplacée par une session valide')
+    }
+    checks.push(`session périmée (${staleId}) → nouvelle session`)
     await visit('/niveau/1', ['Niveau 1', 'missions'])
     await visit('/module/m01', ['Cartographier un serveur inconnu'])
     await visit('/mission/m01-01', [
