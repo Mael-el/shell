@@ -132,15 +132,16 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <p className="lock-note">
-                  Ce niveau s'ouvre automatiquement lorsque 70 % du niveau {level.id - 1} est validé.
+                  Ce niveau s'ouvre automatiquement lorsque 70 % du niveau {level.id - 1} est validé —
+                  tu peux néanmoins l'explorer dès maintenant.
                 </p>
               )}
 
-              {level.unlocked && (
+              <div className="level-actions">
                 <Link to={`/niveau/${level.id}`} className="btn btn-ghost">
-                  Voir le niveau
+                  {level.unlocked ? 'Voir le niveau' : 'Explorer quand même'}
                 </Link>
-              )}
+              </div>
             </article>
           )
         })}

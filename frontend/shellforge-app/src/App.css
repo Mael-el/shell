@@ -1447,3 +1447,8 @@ li.done .mission-index,
     display: none;
   }
 }
+
+.level-actions {
+  display: flex;
+  gap: 0.6rem;
+}
