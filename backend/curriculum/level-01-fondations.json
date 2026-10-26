@@ -1,770 +1,770 @@
 {
-  "level": 1,
-  "name": "Fondations",
-  "tagline": "Le terminal comme instrument de précision",
-  "description": "Lire un système, filtrer du texte, écrire des scripts fiables. Chaque notion est immédiatement appliquée dans un laboratoire avec des preuves à produire.",
-  "icon": "⌨️",
-  "accent": "#38bdf8",
-  "modules": [
+ "level": 1,
+ "name": "Fondations",
+ "tagline": "Le terminal comme instrument de précision",
+ "description": "Lire un système, filtrer du texte, écrire des scripts fiables. Chaque notion est immédiatement appliquée dans un laboratoire avec des preuves à produire.",
+ "icon": "⌨️",
+ "accent": "#3dffa2",
+ "modules": [
+  {
+   "id": "m01",
+   "title": "Fichiers, arborescence et permissions",
+   "description": "Cartographier un serveur, manipuler des fichiers, corriger des permissions dangereuses.",
+   "category": "fondations",
+   "difficulty": "easy",
+   "missions": [
     {
-      "id": "m01",
-      "title": "Fichiers, arborescence et permissions",
-      "description": "Cartographier un serveur, manipuler des fichiers, corriger des permissions dangereuses.",
-      "category": "fondations",
-      "difficulty": "easy",
-      "missions": [
-        {
-          "id": "m01-01",
-          "title": "Cartographier un serveur inconnu",
-          "brief": "Tu arrives sur une machine sans documentation. Produis un inventaire exploitable de son arborescence et de sa configuration.",
-          "difficulty": "easy",
-          "points": 100,
-          "estimated_minutes": 25,
-          "tags": [
-            "find",
-            "arborescence",
-            "inventaire"
-          ],
-          "objectives": [
-            "Parcourir une arborescence avec find",
-            "Produire un inventaire trié et reproductible",
-            "Restituer les chiffres clés dans un rapport"
-          ],
-          "lesson": {
-            "summary": "Avant d'administrer ou d'auditer une machine, il faut savoir ce qu'elle contient. find est l'outil de référence : il parcourt l'arborescence, filtre par type, nom, taille ou permissions, et sa sortie peut être redirigée vers un fichier de preuve.",
-            "sections": [
-              {
-                "id": "concept",
-                "name": "Pourquoi un inventaire",
-                "content": "Un inventaire est la base de tout audit : il répond à « quoi », « où » et « combien ». Sans inventaire, on ne peut ni détecter une anomalie, ni mesurer un changement, ni prioriser une action. Il doit être trié, stable et reproductible."
-              },
-              {
-                "id": "syntaxe",
-                "name": "find en pratique",
-                "content": "find . -type f liste les fichiers sous le dossier courant. Ajoute -name '*.conf' pour filtrer par nom, -perm -4000 pour les binaires SUID, ou -newer ref pour ce qui a changé depuis un fichier de référence. La sortie se trie avec sort et se compte avec wc -l."
-              },
-              {
-                "id": "methode",
-                "name": "Méthode de travail",
-                "content": "Travaille toujours de façon traçable : la donnée brute (sortie de find) est conservée, puis une synthèse lisible est rédigée. C'est exactement le réflexe attendu en audit et en réponse à incident."
-              }
-            ],
-            "references": [
-              {
-                "command": "find . -type f | sort",
-                "role": "Lister tous les fichiers, triés",
-                "example": "find . -type f | sed 's|^\\./||' | sort"
-              },
-              {
-                "command": "find . -name '*.conf'",
-                "role": "Filtrer par extension",
-                "example": "find . -name '*.conf' -type f"
-              },
-              {
-                "command": "wc -l fichier",
-                "role": "Compter les lignes",
-                "example": "find . -type f | wc -l"
-              }
-            ],
-            "pitfalls": [
-              "Oublier -type f : les dossiers polluent l'inventaire.",
-              "Écrire les chemins absolus de la machine hôte au lieu de chemins relatifs au serveur analysé."
-            ]
-          },
-          "lab": {
-            "task": "Le dossier srv/ contient la photographie d'un serveur web. Produis inventaire.txt (tous les fichiers, chemins relatifs à srv/, triés) puis rapport.md avec le nombre total de fichiers et le nombre de fichiers .conf.",
-            "steps": [
-              "cd srv puis find . -type f pour explorer",
-              "Génère inventaire.txt (chemins sans le préfixe ./ ni srv/)",
-              "Rédige rapport.md avec le total et le nombre de .conf"
-            ],
-            "files": {
-              "srv/etc/nginx/nginx.conf": "user www-data;\nevents {}\nhttp {\n    include /etc/nginx/sites-enabled/*.conf;\n}\n",
-              "srv/etc/nginx/sites-enabled/app.conf": "server {\n    listen 80;\n    server_name app.shellforge.test;\n    root /var/www/app;\n}\n",
-              "srv/etc/ssh/sshd_config": "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\n",
-              "srv/var/log/nginx/access.log": "203.0.113.45 - - [12/Jan/2025:09:00:01 +0000] \"GET / HTTP/1.1\" 200 512\n192.0.2.24 - - [12/Jan/2025:09:02:11 +0000] \"GET /login HTTP/1.1\" 200 1024\n",
-              "srv/var/log/auth.log": "Jan 12 03:11:02 web01 sshd[1411]: Failed password for root from 203.0.113.45 port 51514 ssh2\n",
-              "srv/opt/backup/backup.sh": "#!/usr/bin/env bash\ntar -czf /var/backups/site.tar.gz /var/www/app\n",
-              "srv/home/student/notes.txt": "Penser à changer le mot de passe root avant la mise en production.\n",
-              "srv/var/www/app/index.php": "<?php echo 'Shellforge demo';\n"
-            },
-            "dirs": [
-              "srv/var/backups"
-            ],
-            "modes": {
-              "srv/opt/backup/backup.sh": "0755"
-            },
-            "checks": [
-              {
-                "id": "inventaire-existe",
-                "type": "file_exists",
-                "path": "inventaire.txt",
-                "label": "inventaire.txt est produit"
-              },
-              {
-                "id": "inventaire-ssh",
-                "type": "file_contains",
-                "path": "inventaire.txt",
-                "pattern": "^etc/ssh/sshd_config$",
-                "label": "Le chemin etc/ssh/sshd_config est présent (chemins relatifs à srv/)"
-              },
-              {
-                "id": "inventaire-total",
-                "type": "run",
-                "cmd": "test $(wc -l < inventaire.txt) -ge 8 && echo PASS",
-                "expect": "PASS",
-                "label": "Au moins 8 fichiers inventoriés"
-              },
-              {
-                "id": "inventaire-conf",
-                "type": "run",
-                "cmd": "test $(grep -cE '\\.conf$' inventaire.txt) -eq 2 && echo PASS",
-                "expect": "PASS",
-                "label": "Exactement 2 fichiers .conf identifiés"
-              },
-              {
-                "id": "rapport-chiffres",
-                "type": "run",
-                "cmd": "grep -q '8' rapport.md && grep -qi 'conf' rapport.md && echo PASS",
-                "expect": "PASS",
-                "label": "rapport.md contient le total et le décompte des .conf"
-              }
-            ],
-            "hints": [
-              "Depuis srv/, find . -type f renvoie des chemins préfixés par ./ : sed 's|^\\./||' les nettoie.",
-              "Redirige la sortie triée vers ../inventaire.txt pour écrire à la racine du laboratoire."
-            ],
-            "solution": "cd srv && find . -type f | sed 's|^\\./||' | sort > ../inventaire.txt\nprintf '# Inventaire serveur\\n\\n- Fichiers : %s\\n- Configurations .conf : %s\\n' \"$(wc -l < ../inventaire.txt)\" \"$(grep -cE '\\.conf$' ../inventaire.txt)\" > ../rapport.md"
-          },
-          "remediation": "En production, cet inventaire devient une baseline : on le stocke, on le versionne et on alerte sur tout écart (nmap, osquery, FIM). Un fichier inattendu dans /etc est un signal d'alerte."
-        },
-        {
-          "id": "m01-02",
-          "title": "Permissions, SUID et recherche ciblée",
-          "brief": "Un serveur de démonstration a été configuré à la hâte. Corrige les permissions dangereuses et documente l'état final.",
-          "difficulty": "easy",
-          "points": 120,
-          "estimated_minutes": 30,
-          "tags": [
-            "chmod",
-            "stat",
-            "SUID",
-            "audit"
-          ],
-          "objectives": [
-            "Lire un mode de fichier avec stat",
-            "Appliquer le moindre privilège avec chmod",
-            "Détecter les bits SUID et les fichiers world-writable"
-          ],
-          "lesson": {
-            "summary": "Les permissions Unix sont un langage de trois triplets (propriétaire, groupe, autres). Les bits spéciaux SUID, SGID et sticky ajoutent des effets souvent méconnus — et ce sont des vecteurs d'élévation de privilèges classiques.",
-            "sections": [
-              {
-                "id": "concept",
-                "name": "Lire un mode",
-                "content": "Un mode octal encode les droits : 640 = rw- r-- ---. Le premier chiffre peut inclure SUID (4), SGID (2) et sticky (1), d'où les modes à quatre chiffres comme 4755 ou 2770."
-              },
-              {
-                "id": "syntaxe",
-                "name": "Corriger et vérifier",
-                "content": "chmod 750 fichier retire tous les droits aux « autres ». chmod u-s binaire retire le SUID. stat -c '%a %n' fichier affiche le mode octal : c'est la preuve vérifiable à conserver dans un audit."
-              },
-              {
-                "id": "risques",
-                "name": "Pourquoi c'est critique",
-                "content": "Un fichier world-writable peut être modifié par n'importe quel compte ; un binaire SUID s'exécute avec les droits de son propriétaire. Un seul de ces deux défauts suffit souvent à compromettre une machine entière."
-              }
-            ],
-            "references": [
-              {
-                "command": "stat -c '%a %n' fichier",
-                "role": "Afficher le mode octal",
-                "example": "stat -c '%a %n' srv/opt/deploy.sh"
-              },
-              {
-                "command": "chmod 640 fichier",
-                "role": "Restreindre un fichier de configuration",
-                "example": "chmod 640 srv/etc/app/config.yml"
-              },
-              {
-                "command": "find . -perm -4000 -type f",
-                "role": "Lister les binaires SUID",
-                "example": "find srv -perm -4000 -type f"
-              }
-            ],
-            "pitfalls": [
-              "Appliquer 777 « pour que ça marche » : c'est le défaut le plus fréquent en production.",
-              "Oublier de vérifier le résultat avec stat après le chmod."
-            ]
-          },
-          "lab": {
-            "task": "Dans srv/ : (1) déploie deploy.sh en 750, (2) retire le SUID de usr/local/bin/health-check, (3) restreins etc/app/config.yml en 640, (4) produis audit-perms.txt contenant « chemin mode » pour ces trois fichiers et la clé SSH privée student/.ssh/id_ed25519, trié.",
-            "steps": [
-              "Inspecte l'état initial : stat -c '%a %n' sur les fichiers concernés",
-              "Corrige les trois modes avec chmod",
-              "Génère audit-perms.txt avec les quatre lignes triées"
-            ],
-            "files": {
-              "srv/etc/app/config.yml": "database:\n  host: db.internal.shellforge.test\n  user: app\n  password: change-me\n",
-              "srv/opt/deploy.sh": "#!/usr/bin/env bash\nrsync -a build/ /var/www/app/\n",
-              "srv/usr/local/bin/health-check": "#!/bin/sh\ncurl -fsS http://127.0.0.1/health || exit 1\n",
-              "srv/home/student/.ssh/id_ed25519": "-----BEGIN OPENSSH PRIVATE KEY-----\nZGVtbw==\n-----END OPENSSH PRIVATE KEY-----\n",
-              "srv/var/www/app/index.html": "<h1>Shellforge</h1>\n"
-            },
-            "dirs": [
-              "srv/var/backups"
-            ],
-            "modes": {
-              "srv/etc/app/config.yml": "0666",
-              "srv/opt/deploy.sh": "0644",
-              "srv/usr/local/bin/health-check": "4755",
-              "srv/home/student/.ssh/id_ed25519": "0600",
-              "srv/var/www/app/index.html": "0644"
-            },
-            "checks": [
-              {
-                "id": "deploy-750",
-                "type": "run",
-                "cmd": "stat -c %a srv/opt/deploy.sh | grep -qx 750 && echo PASS",
-                "expect": "PASS",
-                "label": "deploy.sh est en 750"
-              },
-              {
-                "id": "config-640",
-                "type": "run",
-                "cmd": "stat -c %a srv/etc/app/config.yml | grep -qx 640 && echo PASS",
-                "expect": "PASS",
-                "label": "config.yml est en 640"
-              },
-              {
-                "id": "suid-retire",
-                "type": "run",
-                "cmd": "test -z \"$(find srv -perm -4000 -type f)\" && echo PASS",
-                "expect": "PASS",
-                "label": "Plus aucun binaire SUID dans l'arborescence"
-              },
-              {
-                "id": "audit-lignes",
-                "type": "run",
-                "cmd": "test $(wc -l < audit-perms.txt) -eq 4 && echo PASS",
-                "expect": "PASS",
-                "label": "audit-perms.txt contient 4 lignes"
-              },
-              {
-                "id": "audit-deploy",
-                "type": "file_contains",
-                "path": "audit-perms.txt",
-                "pattern": "deploy\\.sh\\s+750",
-                "label": "Le mode final de deploy.sh est documenté"
-              },
-              {
-                "id": "aucun-world-writable",
-                "type": "run",
-                "cmd": "test -z \"$(find srv -type f -perm -o+w)\" && echo PASS",
-                "expect": "PASS",
-                "label": "Plus aucun fichier modifiable par tous"
-              }
-            ],
-            "hints": [
-              "stat -c '%a %n' affiche le mode et le nom : redirige la boucle dans audit-perms.txt puis trie.",
-              "find srv -perm -4000 -type f permet de confirmer la disparition du SUID."
-            ],
-            "solution": "chmod 750 srv/opt/deploy.sh\nchmod 0755 srv/usr/local/bin/health-check\nchmod 640 srv/etc/app/config.yml\nfor f in srv/etc/app/config.yml srv/opt/deploy.sh srv/usr/local/bin/health-check srv/home/student/.ssh/id_ed25519; do stat -c '%n %a' \"$f\"; done | sed 's|srv/||' | sort > audit-perms.txt"
-          },
-          "remediation": "Automatise ce contrôle : un script d'audit planifié qui cherche -perm -4000 et -perm -o+w, plus une baseline de modes par serveur. Côté détection, surveille les chmod/chown anormaux (auditd, FIM)."
-        }
+     "id": "m01-01",
+     "title": "Cartographier un serveur inconnu",
+     "brief": "Tu arrives sur une machine sans documentation. Produis un inventaire exploitable de son arborescence et de sa configuration.",
+     "difficulty": "easy",
+     "points": 100,
+     "estimated_minutes": 25,
+     "tags": [
+      "find",
+      "arborescence",
+      "inventaire"
+     ],
+     "objectives": [
+      "Parcourir une arborescence avec find",
+      "Produire un inventaire trié et reproductible",
+      "Restituer les chiffres clés dans un rapport"
+     ],
+     "lesson": {
+      "summary": "Avant d'administrer ou d'auditer une machine, il faut savoir ce qu'elle contient. find est l'outil de référence : il parcourt l'arborescence, filtre par type, nom, taille ou permissions, et sa sortie peut être redirigée vers un fichier de preuve.",
+      "sections": [
+       {
+        "id": "concept",
+        "name": "Pourquoi un inventaire",
+        "content": "Un inventaire est la base de tout audit : il répond à « quoi », « où » et « combien ». Sans inventaire, on ne peut ni détecter une anomalie, ni mesurer un changement, ni prioriser une action. Il doit être trié, stable et reproductible."
+       },
+       {
+        "id": "syntaxe",
+        "name": "find en pratique",
+        "content": "find . -type f liste les fichiers sous le dossier courant. Ajoute -name '*.conf' pour filtrer par nom, -perm -4000 pour les binaires SUID, ou -newer ref pour ce qui a changé depuis un fichier de référence. La sortie se trie avec sort et se compte avec wc -l."
+       },
+       {
+        "id": "methode",
+        "name": "Méthode de travail",
+        "content": "Travaille toujours de façon traçable : la donnée brute (sortie de find) est conservée, puis une synthèse lisible est rédigée. C'est exactement le réflexe attendu en audit et en réponse à incident."
+       }
+      ],
+      "references": [
+       {
+        "command": "find . -type f | sort",
+        "role": "Lister tous les fichiers, triés",
+        "example": "find . -type f | sed 's|^\\./||' | sort"
+       },
+       {
+        "command": "find . -name '*.conf'",
+        "role": "Filtrer par extension",
+        "example": "find . -name '*.conf' -type f"
+       },
+       {
+        "command": "wc -l fichier",
+        "role": "Compter les lignes",
+        "example": "find . -type f | wc -l"
+       }
+      ],
+      "pitfalls": [
+       "Oublier -type f : les dossiers polluent l'inventaire.",
+       "Écrire les chemins absolus de la machine hôte au lieu de chemins relatifs au serveur analysé."
       ]
+     },
+     "lab": {
+      "task": "Le dossier srv/ contient la photographie d'un serveur web. Produis inventaire.txt (tous les fichiers, chemins relatifs à srv/, triés) puis rapport.md avec le nombre total de fichiers et le nombre de fichiers .conf.",
+      "steps": [
+       "cd srv puis find . -type f pour explorer",
+       "Génère inventaire.txt (chemins sans le préfixe ./ ni srv/)",
+       "Rédige rapport.md avec le total et le nombre de .conf"
+      ],
+      "files": {
+       "srv/etc/nginx/nginx.conf": "user www-data;\nevents {}\nhttp {\n    include /etc/nginx/sites-enabled/*.conf;\n}\n",
+       "srv/etc/nginx/sites-enabled/app.conf": "server {\n    listen 80;\n    server_name app.shellforge.test;\n    root /var/www/app;\n}\n",
+       "srv/etc/ssh/sshd_config": "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\n",
+       "srv/var/log/nginx/access.log": "203.0.113.45 - - [12/Jan/2025:09:00:01 +0000] \"GET / HTTP/1.1\" 200 512\n192.0.2.24 - - [12/Jan/2025:09:02:11 +0000] \"GET /login HTTP/1.1\" 200 1024\n",
+       "srv/var/log/auth.log": "Jan 12 03:11:02 web01 sshd[1411]: Failed password for root from 203.0.113.45 port 51514 ssh2\n",
+       "srv/opt/backup/backup.sh": "#!/usr/bin/env bash\ntar -czf /var/backups/site.tar.gz /var/www/app\n",
+       "srv/home/student/notes.txt": "Penser à changer le mot de passe root avant la mise en production.\n",
+       "srv/var/www/app/index.php": "<?php echo 'Shellforge demo';\n"
+      },
+      "dirs": [
+       "srv/var/backups"
+      ],
+      "modes": {
+       "srv/opt/backup/backup.sh": "0755"
+      },
+      "checks": [
+       {
+        "id": "inventaire-existe",
+        "type": "file_exists",
+        "path": "inventaire.txt",
+        "label": "inventaire.txt est produit"
+       },
+       {
+        "id": "inventaire-ssh",
+        "type": "file_contains",
+        "path": "inventaire.txt",
+        "pattern": "^etc/ssh/sshd_config$",
+        "label": "Le chemin etc/ssh/sshd_config est présent (chemins relatifs à srv/)"
+       },
+       {
+        "id": "inventaire-total",
+        "type": "run",
+        "cmd": "test $(wc -l < inventaire.txt) -ge 8 && echo PASS",
+        "expect": "PASS",
+        "label": "Au moins 8 fichiers inventoriés"
+       },
+       {
+        "id": "inventaire-conf",
+        "type": "run",
+        "cmd": "test $(grep -cE '\\.conf$' inventaire.txt) -eq 2 && echo PASS",
+        "expect": "PASS",
+        "label": "Exactement 2 fichiers .conf identifiés"
+       },
+       {
+        "id": "rapport-chiffres",
+        "type": "run",
+        "cmd": "grep -q '8' rapport.md && grep -qi 'conf' rapport.md && echo PASS",
+        "expect": "PASS",
+        "label": "rapport.md contient le total et le décompte des .conf"
+       }
+      ],
+      "hints": [
+       "Depuis srv/, find . -type f renvoie des chemins préfixés par ./ : sed 's|^\\./||' les nettoie.",
+       "Redirige la sortie triée vers ../inventaire.txt pour écrire à la racine du laboratoire."
+      ],
+      "solution": "cd srv && find . -type f | sed 's|^\\./||' | sort > ../inventaire.txt\nprintf '# Inventaire serveur\\n\\n- Fichiers : %s\\n- Configurations .conf : %s\\n' \"$(wc -l < ../inventaire.txt)\" \"$(grep -cE '\\.conf$' ../inventaire.txt)\" > ../rapport.md"
+     },
+     "remediation": "En production, cet inventaire devient une baseline : on le stocke, on le versionne et on alerte sur tout écart (nmap, osquery, FIM). Un fichier inattendu dans /etc est un signal d'alerte."
     },
     {
-      "id": "m02",
-      "title": "Texte, filtres et pipelines",
-      "description": "grep, sed, awk : extraire l'information d'un flux de logs et produire des rapports.",
-      "category": "fondations",
-      "difficulty": "easy",
-      "missions": [
-        {
-          "id": "m02-01",
-          "title": "grep dans les logs : chasse aux intrusions",
-          "brief": "Des tentatives de connexion massives apparaissent dans auth.log. Extrais les faits, pas les impressions.",
-          "difficulty": "easy",
-          "points": 130,
-          "estimated_minutes": 30,
-          "tags": [
-            "grep",
-            "logs",
-            "sshd",
-            "incident"
-          ],
-          "objectives": [
-            "Isoler un motif dans un journal",
-            "Extraire et dédupliquer des adresses IP",
-            "Produire un rapport de sécurité factuel"
-          ],
-          "lesson": {
-            "summary": "Un journal SSH raconte une histoire : tentatives, utilisateurs visés, adresses sources, connexions réussies. grep isole les faits, awk et sort les synthétisent. C'est la base de toute analyse d'incident.",
-            "sections": [
-              {
-                "id": "concept",
-                "name": "Chercher juste",
-                "content": "« Failed password » désigne un échec d'authentification ; « Invalid user » une tentative sur un compte inexistant ; « Accepted » un succès. Confondre ces motifs fausse toute la conclusion de l'analyse."
-              },
-              {
-                "id": "extraction",
-                "name": "Extraire les IP",
-                "content": "grep -oE 'from [0-9.]+' isole la partie utile, awk '{print $2}' ne garde que l'adresse, sort -u déduplique. Cette chaîne (grep | awk | sort) est un réflexe à connaître par cœur."
-              },
-              {
-                "id": "restituer",
-                "name": "Restituer sans noyer",
-                "content": "Un rapport utile contient le volume, la cible principale, la source principale et une recommandation. Trois lignes suffisent si elles sont justes et vérifiables."
-              }
-            ],
-            "references": [
-              {
-                "command": "grep 'Failed password' auth.log",
-                "role": "Isoler les échecs",
-                "example": "grep -c 'Failed password' srv/var/log/auth.log"
-              },
-              {
-                "command": "grep -oE 'from [0-9.]+' | awk '{print $2}'",
-                "role": "Extraire les IP sources",
-                "example": "grep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u"
-              },
-              {
-                "command": "sort | uniq -c | sort -rn",
-                "role": "Classer par fréquence",
-                "example": "sort ips.txt | uniq -c | sort -rn"
-              }
-            ],
-            "pitfalls": [
-              "Compter les lignes « Invalid user » comme des échecs de mot de passe.",
-              "Publier une IP sans vérifier qu'elle vient bien des lignes d'échec."
-            ]
-          },
-          "lab": {
-            "task": "Analyse srv/var/log/auth.log et produis : attaques.txt (uniquement les lignes « Failed password »), ips.txt (adresses IP sources uniques et triées), rapport-secu.md (nombre d'échecs, IP la plus active, recommandation).",
-            "steps": [
-              "Compte les échecs et repère les motifs exacts",
-              "Extrais puis déduplique les IP sources",
-              "Rédige rapport-secu.md avec les chiffres exacts"
-            ],
-            "files": {
-              "srv/var/log/auth.log": "Jan 12 03:11:02 web01 sshd[1411]: Failed password for invalid user admin from 203.0.113.45 port 51514 ssh2\nJan 12 03:11:04 web01 sshd[1411]: Invalid user oracle from 203.0.113.45 port 51522\nJan 12 03:11:07 web01 sshd[1413]: Failed password for root from 203.0.113.45 port 51530 ssh2\nJan 12 09:02:11 web01 sshd[2201]: Accepted password for student from 192.0.2.24 port 44110 ssh2\nJan 12 09:40:18 web01 sshd[2311]: Failed password for invalid user test from 198.51.100.7 port 51222 ssh2\nJan 12 10:02:44 web01 sshd[2401]: Failed password for admin from 203.0.113.45 port 51610 ssh2\nJan 12 10:20:01 web01 sshd[2455]: Accepted publickey for deploy from 192.0.2.24 port 44220 ssh2\nJan 12 11:15:33 web01 sshd[2501]: Failed password for invalid user git from 198.51.100.7 port 51330 ssh2\nJan 12 11:59:02 web01 sshd[2560]: session opened for user student by (uid=0)\nJan 12 12:04:19 web01 sshd[2570]: Failed password for root from 198.51.100.7 port 51440 ssh2\nJan 12 13:02:10 web01 sshd[2600]: Failed password for admin from 203.0.113.45 port 51690 ssh2\n"
-            },
-            "dirs": [
-              "srv/var/log"
-            ],
-            "checks": [
-              {
-                "id": "attaques-existe",
-                "type": "file_contains",
-                "path": "attaques.txt",
-                "pattern": "Failed password",
-                "label": "attaques.txt ne contient que des échecs d'authentification"
-              },
-              {
-                "id": "attaques-sans-succes",
-                "type": "file_not_contains",
-                "path": "attaques.txt",
-                "pattern": "Accepted",
-                "label": "Aucune connexion réussie ne figure dans attaques.txt"
-              },
-              {
-                "id": "attaques-volume",
-                "type": "run",
-                "cmd": "test $(wc -l < attaques.txt) -eq 7 && echo PASS",
-                "expect": "PASS",
-                "label": "Les 7 échecs sont présents"
-              },
-              {
-                "id": "ips-uniques",
-                "type": "run",
-                "cmd": "test $(wc -l < ips.txt) -eq 2 && grep -qx '203.0.113.45' ips.txt && echo PASS",
-                "expect": "PASS",
-                "label": "ips.txt contient les 2 IP sources, sans doublon"
-              },
-              {
-                "id": "rapport-faits",
-                "type": "run",
-                "cmd": "grep -q '203.0.113.45' rapport-secu.md && grep -q '7' rapport-secu.md && echo PASS",
-                "expect": "PASS",
-                "label": "rapport-secu.md contient le volume et l'IP principale"
-              }
-            ],
-            "hints": [
-              "grep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u > ips.txt",
-              "L'IP la plus active apparaît 4 fois : tu peux le vérifier avec uniq -c."
-            ],
-            "solution": "grep 'Failed password' srv/var/log/auth.log > attaques.txt\ngrep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u > ips.txt\nprintf '# Rapport sécurité\\n\\n- Tentatives échouées : %s\\n- Sources uniques : %s\\n- IP la plus active : 203.0.113.45 (4 tentatives)\\n\\nRecommandation : désactiver PasswordAuthentication, limiter MaxAuthTries et bannir les IP après 5 échecs.\\n' \"$(wc -l < attaques.txt)\" \"$(wc -l < ips.txt)\" > rapport-secu.md"
-          },
-          "remediation": "Côté défense : clés SSH uniquement, fail2ban, restriction réseau du port 22, alertes sur pic d'échecs. Côté détection : une règle SIEM sur « Failed password » > 10 en 5 minutes par IP."
-        },
-        {
-          "id": "m02-02",
-          "title": "sed et awk : rapport d'accès et configuration",
-          "brief": "Transforme un journal web en données exploitables, puis corrige une configuration avec une sauvegarde vérifiable.",
-          "difficulty": "medium",
-          "points": 140,
-          "estimated_minutes": 35,
-          "tags": [
-            "awk",
-            "sed",
-            "csv",
-            "nginx"
-          ],
-          "objectives": [
-            "Convertir un log en CSV structuré",
-            "Agréger des codes HTTP avec awk",
-            "Modifier une configuration avec sed en conservant l'original"
-          ],
-          "lesson": {
-            "summary": "awk traite des colonnes, sed édite du texte. Ensemble, ils couvrent 80 % des tâches réelles : fabriquer un CSV depuis des logs, compter des statuts, changer une valeur de configuration sans casser le fichier.",
-            "sections": [
-              {
-                "id": "colonnes",
-                "name": "awk, un tableur en ligne de commande",
-                "content": "Dans un log nginx combiné, $1 est l'IP, $7 le chemin et $9 le code HTTP. On peut imprimer des colonnes choisies, filtrer avec une condition (NR>1, $2==404) et calculer des totaux."
-              },
-              {
-                "id": "edition",
-                "name": "sed sans catastrophe",
-                "content": "sed -i modifie en place ; sed -i.bak modifie en gardant une copie .bak. On vérifie toujours le résultat avec grep avant de recharger un service. Un changement de configuration non sauvegardé est un incident en attente."
-              },
-              {
-                "id": "qualite",
-                "name": "Données propres",
-                "content": "Un CSV doit avoir un en-tête, un séparateur unique et le même nombre de colonnes partout. Vérifie-le avec awk -F, 'NF!=3' : c'est ce que fera le correcteur automatique."
-              }
-            ],
-            "references": [
-              {
-                "command": "awk '{print $1\",\"$9\",\"$7}'",
-                "role": "Extraire IP, statut, chemin",
-                "example": "awk '{print $1\",\"$9\",\"$7}' access.log"
-              },
-              {
-                "command": "awk -F, '$2==404'",
-                "role": "Filtrer sur une colonne CSV",
-                "example": "awk -F, 'NR>1 && $2==404' acces.csv | wc -l"
-              },
-              {
-                "command": "sed -i.bak 's/ancien/nouveau/'",
-                "role": "Remplacer en gardant une sauvegarde",
-                "example": "sed -i.bak 's/old.shellforge.test/app.shellforge.test/' app.conf"
-              }
-            ],
-            "pitfalls": [
-              "Oublier l'en-tête CSV : les outils d'analyse suivants liront une fausse ligne de données.",
-              "Utiliser sed -i sans sauvegarde sur une configuration de production."
-            ]
-          },
-          "lab": {
-            "task": "1) Produis acces.csv avec l'en-tête ip,status,chemin et une ligne par requête. 2) Écris stats.md avec le nombre de réponses 404 et l'IP la plus active. 3) Dans srv/etc/nginx/sites-enabled/app.conf, remplace old.shellforge.test par app.shellforge.test en conservant app.conf.bak.",
-            "steps": [
-              "Inspecte une ligne de log pour identifier les champs",
-              "Génère acces.csv avec l'en-tête puis compte les 404",
-              "Corrige app.conf avec sed -i.bak et vérifie les deux fichiers"
-            ],
-            "files": {
-              "srv/var/log/nginx/access.log": "203.0.113.45 - - [12/Jan/2025:09:00:01 +0000] \"GET /index.html HTTP/1.1\" 200 512\n198.51.100.7 - - [12/Jan/2025:09:01:12 +0000] \"GET /login HTTP/1.1\" 200 1024\n203.0.113.45 - - [12/Jan/2025:09:02:30 +0000] \"POST /login HTTP/1.1\" 302 0\n192.0.2.24 - - [12/Jan/2025:09:03:44 +0000] \"GET /admin HTTP/1.1\" 403 231\n203.0.113.45 - - [12/Jan/2025:09:04:02 +0000] \"GET /../etc/passwd HTTP/1.1\" 404 162\n198.51.100.7 - - [12/Jan/2025:09:05:19 +0000] \"GET /robots.txt HTTP/1.1\" 200 45\n203.0.113.45 - - [12/Jan/2025:09:06:51 +0000] \"GET /wp-login.php HTTP/1.1\" 404 162\n192.0.2.24 - - [12/Jan/2025:09:07:12 +0000] \"GET /assets/app.js HTTP/1.1\" 200 8192\n203.0.113.45 - - [12/Jan/2025:09:08:33 +0000] \"GET /.env HTTP/1.1\" 404 162\n198.51.100.7 - - [12/Jan/2025:09:09:47 +0000] \"GET /index.html HTTP/1.1\" 200 512\n",
-              "srv/etc/nginx/sites-enabled/app.conf": "server {\n    listen 80;\n    server_name old.shellforge.test;\n    root /var/www/app;\n}\n"
-            },
-            "checks": [
-              {
-                "id": "csv-structure",
-                "type": "run",
-                "cmd": "test $(wc -l < acces.csv) -eq 11 && head -1 acces.csv | grep -qx 'ip,status,chemin' && awk -F, 'NF!=3{exit 1}' acces.csv && echo PASS",
-                "expect": "PASS",
-                "label": "acces.csv a un en-tête et 10 lignes à 3 colonnes"
-              },
-              {
-                "id": "csv-404",
-                "type": "run",
-                "cmd": "test $(awk -F, 'NR>1 && $2==404' acces.csv | wc -l) -eq 3 && echo PASS",
-                "expect": "PASS",
-                "label": "Les 3 réponses 404 sont correctement converties"
-              },
-              {
-                "id": "conf-remplacee",
-                "type": "file_contains",
-                "path": "srv/etc/nginx/sites-enabled/app.conf",
-                "pattern": "server_name app\\.shellforge\\.test;",
-                "label": "app.conf pointe sur app.shellforge.test"
-              },
-              {
-                "id": "conf-sauvegarde",
-                "type": "run",
-                "cmd": "grep -q 'old.shellforge.test' srv/etc/nginx/sites-enabled/app.conf.bak && echo PASS",
-                "expect": "PASS",
-                "label": "La sauvegarde app.conf.bak conserve l'ancienne valeur"
-              },
-              {
-                "id": "stats-top",
-                "type": "run",
-                "cmd": "grep -q '203.0.113.45' stats.md && grep -q '3' stats.md && echo PASS",
-                "expect": "PASS",
-                "label": "stats.md identifie 3 réponses 404 et l'IP dominante"
-              }
-            ],
-            "hints": [
-              "awk '{print $1\",\"$9\",\"$7}' : attention à l'ordre demandé (ip,status,chemin).",
-              "L'IP la plus active cumule 5 requêtes : vérifie avec awk '{print $1}' | sort | uniq -c | sort -rn."
-            ],
-            "solution": "{ echo 'ip,status,chemin'; awk '{print $1\",\"$9\",\"$7}' srv/var/log/nginx/access.log; } > acces.csv\nsed -i.bak 's/server_name old\\.shellforge\\.test;/server_name app.shellforge.test;/' srv/etc/nginx/sites-enabled/app.conf\nprintf '# Statistiques d acces\\n\\n- Reponses 404 : %s\\n- IP la plus active : 203.0.113.45 (5 requetes)\\n' \"$(awk -F, 'NR>1 && $2==404' acces.csv | wc -l)\" > stats.md"
-          },
-          "remediation": "En production, ces transformations alimentent un pipeline de logs (vector → Elasticsearch) plutôt qu'un script jetable. Les configurations doivent être versionnées (git) : sed sur un serveur n'est qu'un dépannage traçable."
-        }
+     "id": "m01-02",
+     "title": "Permissions, SUID et recherche ciblée",
+     "brief": "Un serveur de démonstration a été configuré à la hâte. Corrige les permissions dangereuses et documente l'état final.",
+     "difficulty": "easy",
+     "points": 120,
+     "estimated_minutes": 30,
+     "tags": [
+      "chmod",
+      "stat",
+      "SUID",
+      "audit"
+     ],
+     "objectives": [
+      "Lire un mode de fichier avec stat",
+      "Appliquer le moindre privilège avec chmod",
+      "Détecter les bits SUID et les fichiers world-writable"
+     ],
+     "lesson": {
+      "summary": "Les permissions Unix sont un langage de trois triplets (propriétaire, groupe, autres). Les bits spéciaux SUID, SGID et sticky ajoutent des effets souvent méconnus — et ce sont des vecteurs d'élévation de privilèges classiques.",
+      "sections": [
+       {
+        "id": "concept",
+        "name": "Lire un mode",
+        "content": "Un mode octal encode les droits : 640 = rw- r-- ---. Le premier chiffre peut inclure SUID (4), SGID (2) et sticky (1), d'où les modes à quatre chiffres comme 4755 ou 2770."
+       },
+       {
+        "id": "syntaxe",
+        "name": "Corriger et vérifier",
+        "content": "chmod 750 fichier retire tous les droits aux « autres ». chmod u-s binaire retire le SUID. stat -c '%a %n' fichier affiche le mode octal : c'est la preuve vérifiable à conserver dans un audit."
+       },
+       {
+        "id": "risques",
+        "name": "Pourquoi c'est critique",
+        "content": "Un fichier world-writable peut être modifié par n'importe quel compte ; un binaire SUID s'exécute avec les droits de son propriétaire. Un seul de ces deux défauts suffit souvent à compromettre une machine entière."
+       }
+      ],
+      "references": [
+       {
+        "command": "stat -c '%a %n' fichier",
+        "role": "Afficher le mode octal",
+        "example": "stat -c '%a %n' srv/opt/deploy.sh"
+       },
+       {
+        "command": "chmod 640 fichier",
+        "role": "Restreindre un fichier de configuration",
+        "example": "chmod 640 srv/etc/app/config.yml"
+       },
+       {
+        "command": "find . -perm -4000 -type f",
+        "role": "Lister les binaires SUID",
+        "example": "find srv -perm -4000 -type f"
+       }
+      ],
+      "pitfalls": [
+       "Appliquer 777 « pour que ça marche » : c'est le défaut le plus fréquent en production.",
+       "Oublier de vérifier le résultat avec stat après le chmod."
       ]
-    },
-    {
-      "id": "m03",
-      "title": "Logique, boucles et scripts",
-      "description": "Variables, conditions, arguments, boucles et fonctions : écrire des scripts que l'on peut exécuter sans crainte.",
-      "category": "fondations",
-      "difficulty": "medium",
-      "missions": [
-        {
-          "id": "m03-01",
-          "title": "healthcheck.sh : seuils, arguments et codes de sortie",
-          "brief": "Écris le script de supervision qui décide si l'application est saine — et qui le prouve par son code de sortie.",
-          "difficulty": "medium",
-          "points": 150,
-          "estimated_minutes": 35,
-          "tags": [
-            "bash",
-            "conditions",
-            "exit code",
-            "supervision"
-          ],
-          "objectives": [
-            "Lire des seuils depuis un fichier de configuration",
-            "Utiliser des arguments avec valeurs par défaut",
-            "Respecter la convention de codes de sortie 0/1/2"
-          ],
-          "lesson": {
-            "summary": "Un script de supervision n'affiche pas seulement un message : il parle à un orchestrateur. Le code de sortie est le contrat (0 = OK, 1 = erreur technique, 2 = alerte métier). Les seuils viennent de la configuration, pas du code.",
-            "sections": [
-              {
-                "id": "variables",
-                "name": "Variables et valeurs par défaut",
-                "content": "NOM=${1:-valeur} applique une valeur par défaut si l'argument est absent. On source un fichier de configuration avec source fichier : les variables deviennent disponibles dans le script."
-              },
-              {
-                "id": "conditions",
-                "name": "Tester des nombres",
-                "content": "En Bash, (( a > b )) compare des entiers, [ \"$a\" -gt \"$b\" ] fait la même chose en POSIX. On vérifie d'abord l'existence des fichiers, sinon la comparaison échoue de façon illisible."
-              },
-              {
-                "id": "codes",
-                "name": "Le contrat du code de sortie",
-                "content": "exit 0 succès, exit 1 erreur (fichier manquant), exit 2 alerte (seuil dépassé). Un superviseur (systemd, Nagios, Kubernetes) distingue ainsi un problème d'infrastructure d'un problème applicatif."
-              }
-            ],
-            "references": [
-              {
-                "command": "source fichier.env",
-                "role": "Charger une configuration",
-                "example": "source srv/etc/app/app.env"
-              },
-              {
-                "command": "${1:-defaut}",
-                "role": "Argument avec valeur par défaut",
-                "example": "disk_max=\"${1:-$DISK_MAX}\""
-              },
-              {
-                "command": "(( disk > disk_max ))",
-                "role": "Comparaison entière",
-                "example": "if (( disk > disk_max )); then exit 2; fi"
-              }
-            ],
-            "pitfalls": [
-              "Utiliser [ $a > $b ] : en shell, > redirige dans un fichier au lieu de comparer.",
-              "Sortir avec 0 en cas d'alerte : le superviseur croira que tout va bien."
-            ]
-          },
-          "lab": {
-            "task": "Écris healthcheck.sh qui lit srv/etc/app/app.env (DISK_MAX, LATENCY_MAX) et les mesures srv/var/lib/app/disk.pct et latency.ms. Affiche « ALERT disk=<d> latency=<l> » et sort en 2 si un seuil est dépassé ; « OK disk=<d> latency=<l> » et 0 sinon ; « MISSING <fichier> » et 1 si une entrée manque. Les seuils doivent être surchargeables par les arguments $1 (disque) et $2 (latence).",
-            "steps": [
-              "Charge app.env et vérifie l'existence des fichiers de mesures",
-              "Compare les valeurs aux seuils et choisis le code de sortie",
-              "Teste le cas nominal (exit 2) et le cas surchargé (bash healthcheck.sh 95 500 → OK)"
-            ],
-            "files": {
-              "srv/etc/app/app.env": "DISK_MAX=85\nLATENCY_MAX=300\n",
-              "srv/var/lib/app/disk.pct": "92\n",
-              "srv/var/lib/app/latency.ms": "410\n",
-              "srv/var/lib/app/version": "2.4.1\n"
-            },
-            "dirs": [
-              "srv/var/lib/app"
-            ],
-            "checks": [
-              {
-                "id": "script-existe",
-                "type": "file_exists",
-                "path": "healthcheck.sh",
-                "label": "healthcheck.sh est présent"
-              },
-              {
-                "id": "alerte-code",
-                "type": "run",
-                "cmd": "bash healthcheck.sh >/dev/null 2>&1; test $? -eq 2 && echo PASS",
-                "expect": "PASS",
-                "label": "Seuils dépassés → code de sortie 2"
-              },
-              {
-                "id": "alerte-message",
-                "type": "run",
-                "cmd": "bash healthcheck.sh | grep -q 'disk=92' && bash healthcheck.sh | grep -q 'latency=410' && echo PASS",
-                "expect": "PASS",
-                "label": "Le message d'alerte contient les mesures réelles"
-              },
-              {
-                "id": "override-ok",
-                "type": "run",
-                "cmd": "bash healthcheck.sh 95 500 | grep -q '^OK' && echo PASS",
-                "expect": "PASS",
-                "label": "Les seuils sont surchargeables par arguments ($1, $2)"
-              },
-              {
-                "id": "fichier-manquant",
-                "type": "run",
-                "cmd": "mv srv/var/lib/app/latency.ms latency.bak && (bash healthcheck.sh; echo code=$?) | grep -q 'code=1' && mv latency.bak srv/var/lib/app/latency.ms && echo PASS",
-                "expect": "PASS",
-                "label": "Fichier de mesure manquant → code 1 avec message MISSING"
-              }
-            ],
-            "hints": [
-              "disk=$(<\"srv/var/lib/app/disk.pct\") lit tout le fichier dans une variable.",
-              "Pense à tester l'existence des trois fichiers avant de comparer."
-            ],
-            "solution": "cat > healthcheck.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nenv_file=\"srv/etc/app/app.env\"\ndisk_file=\"srv/var/lib/app/disk.pct\"\nlat_file=\"srv/var/lib/app/latency.ms\"\nfor f in \"$env_file\" \"$disk_file\" \"$lat_file\"; do\n  [[ -f \"$f\" ]] || { echo \"MISSING $f\"; exit 1; }\ndone\nsource \"$env_file\"\ndisk_max=\"${1:-$DISK_MAX}\"\nlat_max=\"${2:-$LATENCY_MAX}\"\ndisk=$(<\"$disk_file\")\nlat=$(<\"$lat_file\")\nif (( disk > disk_max )) || (( lat > lat_max )); then\n  echo \"ALERT disk=$disk latency=$lat\"\n  exit 2\nfi\necho \"OK disk=$disk latency=$lat\"\nBASH\nchmod +x healthcheck.sh\nbash healthcheck.sh 95 500\n"
-          },
-          "remediation": "Un healthcheck doit être court, sans dépendance réseau non bornée, et testé pour ses trois codes de sortie. En production, expose-le via systemd (ExecStartPost) ou une sonde Kubernetes readiness/liveness."
-        },
-        {
-          "id": "m03-02",
-          "title": "Normaliser un lot de fichiers",
-          "brief": "La boîte de réception contient des noms de fichiers ingérables. Écris le script qui les normalise, les archive et journalise l'opération.",
-          "difficulty": "medium",
-          "points": 160,
-          "estimated_minutes": 40,
-          "tags": [
-            "boucles",
-            "sed",
-            "manifeste",
-            "automatisation"
-          ],
-          "objectives": [
-            "Boucler sur les fichiers d'un dossier",
-            "Normaliser des noms de fichiers de façon stable",
-            "Produire un manifeste de traçabilité"
-          ],
-          "lesson": {
-            "summary": "Renommer à la main est une perte de temps et une source d'erreurs. Une boucle Bash + sed produit des noms déterministes, déplace les fichiers et journalise chaque correspondance dans un manifeste : c'est la base d'un traitement de données reproductible.",
-            "sections": [
-              {
-                "id": "boucle",
-                "name": "for sur les fichiers",
-                "content": "for f in dossier/* parcourt les entrées. Toujours protéger le corps avec [[ -f \"$f\" ]] || continue pour ignorer les dossiers et les motifs non résolus."
-              },
-              {
-                "id": "slug",
-                "name": "Fabriquer un nom propre",
-                "content": "Un slug est minuscule, sans accents, sans espaces, avec un jeu de caractères restreint. tr, sed -E 's/[^a-z0-9.]+/-/g' et la suppression des tirets en bordure suffisent."
-              },
-              {
-                "id": "tracabilite",
-                "name": "Manifeste",
-                "content": "Un CSV original;nouveau;octets permet de rejouer, vérifier ou annuler un traitement. Sans manifeste, un renommage en masse est irréversible."
-              }
-            ],
-            "references": [
-              {
-                "command": "for f in inbox/*; do ...; done",
-                "role": "Boucler sur des fichiers",
-                "example": "for f in inbox/*; do [[ -f \"$f\" ]] || continue; done"
-              },
-              {
-                "command": "tr '[:upper:]' '[:lower:]'",
-                "role": "Passer en minuscules",
-                "example": "printf '%s' \"$base\" | tr '[:upper:]' '[:lower:]'"
-              },
-              {
-                "command": "sed -E 's/[^a-z0-9.]+/-/g'",
-                "role": "Nettoyer un nom",
-                "example": "sed -E 's/[^a-z0-9.]+/-/g; s/^-|-$//g'"
-              }
-            ],
-            "pitfalls": [
-              "Renommer sans manifeste : impossible de revenir en arrière.",
-              "Oublier les accents : ils produisent des noms imprévisibles selon la locale."
-            ]
-          },
-          "lab": {
-            "task": "Écris normaliser.sh qui : crée archive/, renomme chaque fichier d'inbox/ en slug (minuscules, accents retirés, séparateurs -, accents et caractères spéciaux éliminés), le déplace dans archive/, et ajoute une ligne original;nouveau;octets à manifeste.csv (en-tête inclus). Le dossier inbox/ doit être vide à la fin.",
-            "steps": [
-              "Écris la boucle sur inbox/* et génère le slug",
-              "Déplace le fichier et calcule sa taille avec wc -c",
-              "Ajoute l'en-tête au manifeste puis vérifie les 6 lignes de données"
-            ],
-            "files": {
-              "inbox/2025 01 - Facture ACME.pdf.txt": "Facture ACME, montant 1200 EUR.\n",
-              "inbox/2025 01 - Facture Globex.pdf.txt": "Facture Globex, montant 980 EUR.\n",
-              "inbox/Rapport Incident #12.txt": "Incident 12 : indisponibilité 14 min.\n",
-              "inbox/Note Réunion Équipe.txt": "Compte rendu de réunion hebdomadaire.\n",
-              "inbox/Export Client (final).txt": "Export des clients actifs.\n",
-              "inbox/Inventaire 2024-12.txt": "Inventaire de décembre.\n"
-            },
-            "dirs": [
-              "inbox"
-            ],
-            "checks": [
-              {
-                "id": "archive-6",
-                "type": "run",
-                "cmd": "test -d archive && test $(ls archive | wc -l) -eq 6 && echo PASS",
-                "expect": "PASS",
-                "label": "Les 6 fichiers sont archivés"
-              },
-              {
-                "id": "inbox-vide",
-                "type": "run",
-                "cmd": "test -z \"$(ls -A inbox)\" && echo PASS",
-                "expect": "PASS",
-                "label": "inbox/ est vide"
-              },
-              {
-                "id": "manifeste",
-                "type": "run",
-                "cmd": "test $(wc -l < manifeste.csv) -eq 7 && head -1 manifeste.csv | grep -q 'original;nouveau;octets' && echo PASS",
-                "expect": "PASS",
-                "label": "manifeste.csv contient l'en-tête et 6 lignes"
-              },
-              {
-                "id": "slug",
-                "type": "run",
-                "cmd": "ls archive | grep -qx '2025-01-facture-acme.pdf.txt' && echo PASS",
-                "expect": "PASS",
-                "label": "Le nom normalisé 2025-01-facture-acme.pdf.txt est exact"
-              },
-              {
-                "id": "sans-espace",
-                "type": "run",
-                "cmd": "! ls archive | grep -q ' ' && echo PASS",
-                "expect": "PASS",
-                "label": "Aucun nom de fichier ne contient d'espace"
-              }
-            ],
-            "hints": [
-              "Traite les accents avant le remplacement générique : sed -e 's/é/e/g' -e 's/è/e/g' ...",
-              "Enchaîne s/[^a-z0-9.]/-/g puis s/--*/-/g et supprime les tirets aux extrémités."
-            ],
-            "solution": "#!/usr/bin/env bash\nset -euo pipefail\nmkdir -p archive\nprintf 'original;nouveau;octets\\n' > manifeste.csv\nfor src in inbox/*; do\n  [[ -f \"$src\" ]] || continue\n  base=$(basename \"$src\")\n  slug=$(printf '%s' \"$base\" | tr '[:upper:]' '[:lower:]' \\\n    | sed -e 's/é/e/g' -e 's/è/e/g' -e 's/ê/e/g' -e 's/à/a/g' -e 's/ç/c/g' -e 's/ù/u/g' \\\n    | sed -E 's/[^a-z0-9.]+/-/g; s/--*/-/g; s/^-//; s/-$//')\n  mv -- \"$src\" \"archive/$slug\"\n  printf '%s;%s;%s\\n' \"$base\" \"$slug\" \"$(wc -c < \"archive/$slug\")\" >> manifeste.csv\ndone"
-          },
-          "remediation": "En production, préfère un identifiant immuable (UUID, hash) au nom de fichier, et stocke les métadonnées en base. Le manifeste est ton journal d'audit : conserve-le avec les fichiers."
-        }
-      ]
+     },
+     "lab": {
+      "task": "Dans srv/ : (1) déploie deploy.sh en 750, (2) retire le SUID de usr/local/bin/health-check, (3) restreins etc/app/config.yml en 640, (4) produis audit-perms.txt contenant « chemin mode » pour ces trois fichiers et la clé SSH privée student/.ssh/id_ed25519, trié.",
+      "steps": [
+       "Inspecte l'état initial : stat -c '%a %n' sur les fichiers concernés",
+       "Corrige les trois modes avec chmod",
+       "Génère audit-perms.txt avec les quatre lignes triées"
+      ],
+      "files": {
+       "srv/etc/app/config.yml": "database:\n  host: db.internal.shellforge.test\n  user: app\n  password: change-me\n",
+       "srv/opt/deploy.sh": "#!/usr/bin/env bash\nrsync -a build/ /var/www/app/\n",
+       "srv/usr/local/bin/health-check": "#!/bin/sh\ncurl -fsS http://127.0.0.1/health || exit 1\n",
+       "srv/home/student/.ssh/id_ed25519": "-----BEGIN OPENSSH PRIVATE KEY-----\nZGVtbw==\n-----END OPENSSH PRIVATE KEY-----\n",
+       "srv/var/www/app/index.html": "<h1>Shellforge</h1>\n"
+      },
+      "dirs": [
+       "srv/var/backups"
+      ],
+      "modes": {
+       "srv/etc/app/config.yml": "0666",
+       "srv/opt/deploy.sh": "0644",
+       "srv/usr/local/bin/health-check": "4755",
+       "srv/home/student/.ssh/id_ed25519": "0600",
+       "srv/var/www/app/index.html": "0644"
+      },
+      "checks": [
+       {
+        "id": "deploy-750",
+        "type": "run",
+        "cmd": "stat -c %a srv/opt/deploy.sh | grep -qx 750 && echo PASS",
+        "expect": "PASS",
+        "label": "deploy.sh est en 750"
+       },
+       {
+        "id": "config-640",
+        "type": "run",
+        "cmd": "stat -c %a srv/etc/app/config.yml | grep -qx 640 && echo PASS",
+        "expect": "PASS",
+        "label": "config.yml est en 640"
+       },
+       {
+        "id": "suid-retire",
+        "type": "run",
+        "cmd": "test -z \"$(find srv -perm -4000 -type f)\" && echo PASS",
+        "expect": "PASS",
+        "label": "Plus aucun binaire SUID dans l'arborescence"
+       },
+       {
+        "id": "audit-lignes",
+        "type": "run",
+        "cmd": "test $(wc -l < audit-perms.txt) -eq 4 && echo PASS",
+        "expect": "PASS",
+        "label": "audit-perms.txt contient 4 lignes"
+       },
+       {
+        "id": "audit-deploy",
+        "type": "file_contains",
+        "path": "audit-perms.txt",
+        "pattern": "deploy\\.sh\\s+750",
+        "label": "Le mode final de deploy.sh est documenté"
+       },
+       {
+        "id": "aucun-world-writable",
+        "type": "run",
+        "cmd": "test -z \"$(find srv -type f -perm -o+w)\" && echo PASS",
+        "expect": "PASS",
+        "label": "Plus aucun fichier modifiable par tous"
+       }
+      ],
+      "hints": [
+       "stat -c '%a %n' affiche le mode et le nom : redirige la boucle dans audit-perms.txt puis trie.",
+       "find srv -perm -4000 -type f permet de confirmer la disparition du SUID."
+      ],
+      "solution": "chmod 750 srv/opt/deploy.sh\nchmod 0755 srv/usr/local/bin/health-check\nchmod 640 srv/etc/app/config.yml\nfor f in srv/etc/app/config.yml srv/opt/deploy.sh srv/usr/local/bin/health-check srv/home/student/.ssh/id_ed25519; do stat -c '%n %a' \"$f\"; done | sed 's|srv/||' | sort > audit-perms.txt"
+     },
+     "remediation": "Automatise ce contrôle : un script d'audit planifié qui cherche -perm -4000 et -perm -o+w, plus une baseline de modes par serveur. Côté détection, surveille les chmod/chown anormaux (auditd, FIM)."
     }
-  ]
+   ]
+  },
+  {
+   "id": "m02",
+   "title": "Texte, filtres et pipelines",
+   "description": "grep, sed, awk : extraire l'information d'un flux de logs et produire des rapports.",
+   "category": "fondations",
+   "difficulty": "easy",
+   "missions": [
+    {
+     "id": "m02-01",
+     "title": "grep dans les logs : chasse aux intrusions",
+     "brief": "Des tentatives de connexion massives apparaissent dans auth.log. Extrais les faits, pas les impressions.",
+     "difficulty": "easy",
+     "points": 130,
+     "estimated_minutes": 30,
+     "tags": [
+      "grep",
+      "logs",
+      "sshd",
+      "incident"
+     ],
+     "objectives": [
+      "Isoler un motif dans un journal",
+      "Extraire et dédupliquer des adresses IP",
+      "Produire un rapport de sécurité factuel"
+     ],
+     "lesson": {
+      "summary": "Un journal SSH raconte une histoire : tentatives, utilisateurs visés, adresses sources, connexions réussies. grep isole les faits, awk et sort les synthétisent. C'est la base de toute analyse d'incident.",
+      "sections": [
+       {
+        "id": "concept",
+        "name": "Chercher juste",
+        "content": "« Failed password » désigne un échec d'authentification ; « Invalid user » une tentative sur un compte inexistant ; « Accepted » un succès. Confondre ces motifs fausse toute la conclusion de l'analyse."
+       },
+       {
+        "id": "extraction",
+        "name": "Extraire les IP",
+        "content": "grep -oE 'from [0-9.]+' isole la partie utile, awk '{print $2}' ne garde que l'adresse, sort -u déduplique. Cette chaîne (grep | awk | sort) est un réflexe à connaître par cœur."
+       },
+       {
+        "id": "restituer",
+        "name": "Restituer sans noyer",
+        "content": "Un rapport utile contient le volume, la cible principale, la source principale et une recommandation. Trois lignes suffisent si elles sont justes et vérifiables."
+       }
+      ],
+      "references": [
+       {
+        "command": "grep 'Failed password' auth.log",
+        "role": "Isoler les échecs",
+        "example": "grep -c 'Failed password' srv/var/log/auth.log"
+       },
+       {
+        "command": "grep -oE 'from [0-9.]+' | awk '{print $2}'",
+        "role": "Extraire les IP sources",
+        "example": "grep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u"
+       },
+       {
+        "command": "sort | uniq -c | sort -rn",
+        "role": "Classer par fréquence",
+        "example": "sort ips.txt | uniq -c | sort -rn"
+       }
+      ],
+      "pitfalls": [
+       "Compter les lignes « Invalid user » comme des échecs de mot de passe.",
+       "Publier une IP sans vérifier qu'elle vient bien des lignes d'échec."
+      ]
+     },
+     "lab": {
+      "task": "Analyse srv/var/log/auth.log et produis : attaques.txt (uniquement les lignes « Failed password »), ips.txt (adresses IP sources uniques et triées), rapport-secu.md (nombre d'échecs, IP la plus active, recommandation).",
+      "steps": [
+       "Compte les échecs et repère les motifs exacts",
+       "Extrais puis déduplique les IP sources",
+       "Rédige rapport-secu.md avec les chiffres exacts"
+      ],
+      "files": {
+       "srv/var/log/auth.log": "Jan 12 03:11:02 web01 sshd[1411]: Failed password for invalid user admin from 203.0.113.45 port 51514 ssh2\nJan 12 03:11:04 web01 sshd[1411]: Invalid user oracle from 203.0.113.45 port 51522\nJan 12 03:11:07 web01 sshd[1413]: Failed password for root from 203.0.113.45 port 51530 ssh2\nJan 12 09:02:11 web01 sshd[2201]: Accepted password for student from 192.0.2.24 port 44110 ssh2\nJan 12 09:40:18 web01 sshd[2311]: Failed password for invalid user test from 198.51.100.7 port 51222 ssh2\nJan 12 10:02:44 web01 sshd[2401]: Failed password for admin from 203.0.113.45 port 51610 ssh2\nJan 12 10:20:01 web01 sshd[2455]: Accepted publickey for deploy from 192.0.2.24 port 44220 ssh2\nJan 12 11:15:33 web01 sshd[2501]: Failed password for invalid user git from 198.51.100.7 port 51330 ssh2\nJan 12 11:59:02 web01 sshd[2560]: session opened for user student by (uid=0)\nJan 12 12:04:19 web01 sshd[2570]: Failed password for root from 198.51.100.7 port 51440 ssh2\nJan 12 13:02:10 web01 sshd[2600]: Failed password for admin from 203.0.113.45 port 51690 ssh2\n"
+      },
+      "dirs": [
+       "srv/var/log"
+      ],
+      "checks": [
+       {
+        "id": "attaques-existe",
+        "type": "file_contains",
+        "path": "attaques.txt",
+        "pattern": "Failed password",
+        "label": "attaques.txt ne contient que des échecs d'authentification"
+       },
+       {
+        "id": "attaques-sans-succes",
+        "type": "file_not_contains",
+        "path": "attaques.txt",
+        "pattern": "Accepted",
+        "label": "Aucune connexion réussie ne figure dans attaques.txt"
+       },
+       {
+        "id": "attaques-volume",
+        "type": "run",
+        "cmd": "test $(wc -l < attaques.txt) -eq 7 && echo PASS",
+        "expect": "PASS",
+        "label": "Les 7 échecs sont présents"
+       },
+       {
+        "id": "ips-uniques",
+        "type": "run",
+        "cmd": "test $(wc -l < ips.txt) -eq 2 && grep -qx '203.0.113.45' ips.txt && echo PASS",
+        "expect": "PASS",
+        "label": "ips.txt contient les 2 IP sources, sans doublon"
+       },
+       {
+        "id": "rapport-faits",
+        "type": "run",
+        "cmd": "grep -q '203.0.113.45' rapport-secu.md && grep -q '7' rapport-secu.md && echo PASS",
+        "expect": "PASS",
+        "label": "rapport-secu.md contient le volume et l'IP principale"
+       }
+      ],
+      "hints": [
+       "grep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u > ips.txt",
+       "L'IP la plus active apparaît 4 fois : tu peux le vérifier avec uniq -c."
+      ],
+      "solution": "grep 'Failed password' srv/var/log/auth.log > attaques.txt\ngrep -oE 'from [0-9.]+' attaques.txt | awk '{print $2}' | sort -u > ips.txt\nprintf '# Rapport sécurité\\n\\n- Tentatives échouées : %s\\n- Sources uniques : %s\\n- IP la plus active : 203.0.113.45 (4 tentatives)\\n\\nRecommandation : désactiver PasswordAuthentication, limiter MaxAuthTries et bannir les IP après 5 échecs.\\n' \"$(wc -l < attaques.txt)\" \"$(wc -l < ips.txt)\" > rapport-secu.md"
+     },
+     "remediation": "Côté défense : clés SSH uniquement, fail2ban, restriction réseau du port 22, alertes sur pic d'échecs. Côté détection : une règle SIEM sur « Failed password » > 10 en 5 minutes par IP."
+    },
+    {
+     "id": "m02-02",
+     "title": "sed et awk : rapport d'accès et configuration",
+     "brief": "Transforme un journal web en données exploitables, puis corrige une configuration avec une sauvegarde vérifiable.",
+     "difficulty": "medium",
+     "points": 140,
+     "estimated_minutes": 35,
+     "tags": [
+      "awk",
+      "sed",
+      "csv",
+      "nginx"
+     ],
+     "objectives": [
+      "Convertir un log en CSV structuré",
+      "Agréger des codes HTTP avec awk",
+      "Modifier une configuration avec sed en conservant l'original"
+     ],
+     "lesson": {
+      "summary": "awk traite des colonnes, sed édite du texte. Ensemble, ils couvrent 80 % des tâches réelles : fabriquer un CSV depuis des logs, compter des statuts, changer une valeur de configuration sans casser le fichier.",
+      "sections": [
+       {
+        "id": "colonnes",
+        "name": "awk, un tableur en ligne de commande",
+        "content": "Dans un log nginx combiné, $1 est l'IP, $7 le chemin et $9 le code HTTP. On peut imprimer des colonnes choisies, filtrer avec une condition (NR>1, $2==404) et calculer des totaux."
+       },
+       {
+        "id": "edition",
+        "name": "sed sans catastrophe",
+        "content": "sed -i modifie en place ; sed -i.bak modifie en gardant une copie .bak. On vérifie toujours le résultat avec grep avant de recharger un service. Un changement de configuration non sauvegardé est un incident en attente."
+       },
+       {
+        "id": "qualite",
+        "name": "Données propres",
+        "content": "Un CSV doit avoir un en-tête, un séparateur unique et le même nombre de colonnes partout. Vérifie-le avec awk -F, 'NF!=3' : c'est ce que fera le correcteur automatique."
+       }
+      ],
+      "references": [
+       {
+        "command": "awk '{print $1\",\"$9\",\"$7}'",
+        "role": "Extraire IP, statut, chemin",
+        "example": "awk '{print $1\",\"$9\",\"$7}' access.log"
+       },
+       {
+        "command": "awk -F, '$2==404'",
+        "role": "Filtrer sur une colonne CSV",
+        "example": "awk -F, 'NR>1 && $2==404' acces.csv | wc -l"
+       },
+       {
+        "command": "sed -i.bak 's/ancien/nouveau/'",
+        "role": "Remplacer en gardant une sauvegarde",
+        "example": "sed -i.bak 's/old.shellforge.test/app.shellforge.test/' app.conf"
+       }
+      ],
+      "pitfalls": [
+       "Oublier l'en-tête CSV : les outils d'analyse suivants liront une fausse ligne de données.",
+       "Utiliser sed -i sans sauvegarde sur une configuration de production."
+      ]
+     },
+     "lab": {
+      "task": "1) Produis acces.csv avec l'en-tête ip,status,chemin et une ligne par requête. 2) Écris stats.md avec le nombre de réponses 404 et l'IP la plus active. 3) Dans srv/etc/nginx/sites-enabled/app.conf, remplace old.shellforge.test par app.shellforge.test en conservant app.conf.bak.",
+      "steps": [
+       "Inspecte une ligne de log pour identifier les champs",
+       "Génère acces.csv avec l'en-tête puis compte les 404",
+       "Corrige app.conf avec sed -i.bak et vérifie les deux fichiers"
+      ],
+      "files": {
+       "srv/var/log/nginx/access.log": "203.0.113.45 - - [12/Jan/2025:09:00:01 +0000] \"GET /index.html HTTP/1.1\" 200 512\n198.51.100.7 - - [12/Jan/2025:09:01:12 +0000] \"GET /login HTTP/1.1\" 200 1024\n203.0.113.45 - - [12/Jan/2025:09:02:30 +0000] \"POST /login HTTP/1.1\" 302 0\n192.0.2.24 - - [12/Jan/2025:09:03:44 +0000] \"GET /admin HTTP/1.1\" 403 231\n203.0.113.45 - - [12/Jan/2025:09:04:02 +0000] \"GET /../etc/passwd HTTP/1.1\" 404 162\n198.51.100.7 - - [12/Jan/2025:09:05:19 +0000] \"GET /robots.txt HTTP/1.1\" 200 45\n203.0.113.45 - - [12/Jan/2025:09:06:51 +0000] \"GET /wp-login.php HTTP/1.1\" 404 162\n192.0.2.24 - - [12/Jan/2025:09:07:12 +0000] \"GET /assets/app.js HTTP/1.1\" 200 8192\n203.0.113.45 - - [12/Jan/2025:09:08:33 +0000] \"GET /.env HTTP/1.1\" 404 162\n198.51.100.7 - - [12/Jan/2025:09:09:47 +0000] \"GET /index.html HTTP/1.1\" 200 512\n",
+       "srv/etc/nginx/sites-enabled/app.conf": "server {\n    listen 80;\n    server_name old.shellforge.test;\n    root /var/www/app;\n}\n"
+      },
+      "checks": [
+       {
+        "id": "csv-structure",
+        "type": "run",
+        "cmd": "test $(wc -l < acces.csv) -eq 11 && head -1 acces.csv | grep -qx 'ip,status,chemin' && awk -F, 'NF!=3{exit 1}' acces.csv && echo PASS",
+        "expect": "PASS",
+        "label": "acces.csv a un en-tête et 10 lignes à 3 colonnes"
+       },
+       {
+        "id": "csv-404",
+        "type": "run",
+        "cmd": "test $(awk -F, 'NR>1 && $2==404' acces.csv | wc -l) -eq 3 && echo PASS",
+        "expect": "PASS",
+        "label": "Les 3 réponses 404 sont correctement converties"
+       },
+       {
+        "id": "conf-remplacee",
+        "type": "file_contains",
+        "path": "srv/etc/nginx/sites-enabled/app.conf",
+        "pattern": "server_name app\\.shellforge\\.test;",
+        "label": "app.conf pointe sur app.shellforge.test"
+       },
+       {
+        "id": "conf-sauvegarde",
+        "type": "run",
+        "cmd": "grep -q 'old.shellforge.test' srv/etc/nginx/sites-enabled/app.conf.bak && echo PASS",
+        "expect": "PASS",
+        "label": "La sauvegarde app.conf.bak conserve l'ancienne valeur"
+       },
+       {
+        "id": "stats-top",
+        "type": "run",
+        "cmd": "grep -q '203.0.113.45' stats.md && grep -q '3' stats.md && echo PASS",
+        "expect": "PASS",
+        "label": "stats.md identifie 3 réponses 404 et l'IP dominante"
+       }
+      ],
+      "hints": [
+       "awk '{print $1\",\"$9\",\"$7}' : attention à l'ordre demandé (ip,status,chemin).",
+       "L'IP la plus active cumule 5 requêtes : vérifie avec awk '{print $1}' | sort | uniq -c | sort -rn."
+      ],
+      "solution": "{ echo 'ip,status,chemin'; awk '{print $1\",\"$9\",\"$7}' srv/var/log/nginx/access.log; } > acces.csv\nsed -i.bak 's/server_name old\\.shellforge\\.test;/server_name app.shellforge.test;/' srv/etc/nginx/sites-enabled/app.conf\nprintf '# Statistiques d acces\\n\\n- Reponses 404 : %s\\n- IP la plus active : 203.0.113.45 (5 requetes)\\n' \"$(awk -F, 'NR>1 && $2==404' acces.csv | wc -l)\" > stats.md"
+     },
+     "remediation": "En production, ces transformations alimentent un pipeline de logs (vector → Elasticsearch) plutôt qu'un script jetable. Les configurations doivent être versionnées (git) : sed sur un serveur n'est qu'un dépannage traçable."
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "title": "Logique, boucles et scripts",
+   "description": "Variables, conditions, arguments, boucles et fonctions : écrire des scripts que l'on peut exécuter sans crainte.",
+   "category": "fondations",
+   "difficulty": "medium",
+   "missions": [
+    {
+     "id": "m03-01",
+     "title": "healthcheck.sh : seuils, arguments et codes de sortie",
+     "brief": "Écris le script de supervision qui décide si l'application est saine — et qui le prouve par son code de sortie.",
+     "difficulty": "medium",
+     "points": 150,
+     "estimated_minutes": 35,
+     "tags": [
+      "bash",
+      "conditions",
+      "exit code",
+      "supervision"
+     ],
+     "objectives": [
+      "Lire des seuils depuis un fichier de configuration",
+      "Utiliser des arguments avec valeurs par défaut",
+      "Respecter la convention de codes de sortie 0/1/2"
+     ],
+     "lesson": {
+      "summary": "Un script de supervision n'affiche pas seulement un message : il parle à un orchestrateur. Le code de sortie est le contrat (0 = OK, 1 = erreur technique, 2 = alerte métier). Les seuils viennent de la configuration, pas du code.",
+      "sections": [
+       {
+        "id": "variables",
+        "name": "Variables et valeurs par défaut",
+        "content": "NOM=${1:-valeur} applique une valeur par défaut si l'argument est absent. On source un fichier de configuration avec source fichier : les variables deviennent disponibles dans le script."
+       },
+       {
+        "id": "conditions",
+        "name": "Tester des nombres",
+        "content": "En Bash, (( a > b )) compare des entiers, [ \"$a\" -gt \"$b\" ] fait la même chose en POSIX. On vérifie d'abord l'existence des fichiers, sinon la comparaison échoue de façon illisible."
+       },
+       {
+        "id": "codes",
+        "name": "Le contrat du code de sortie",
+        "content": "exit 0 succès, exit 1 erreur (fichier manquant), exit 2 alerte (seuil dépassé). Un superviseur (systemd, Nagios, Kubernetes) distingue ainsi un problème d'infrastructure d'un problème applicatif."
+       }
+      ],
+      "references": [
+       {
+        "command": "source fichier.env",
+        "role": "Charger une configuration",
+        "example": "source srv/etc/app/app.env"
+       },
+       {
+        "command": "${1:-defaut}",
+        "role": "Argument avec valeur par défaut",
+        "example": "disk_max=\"${1:-$DISK_MAX}\""
+       },
+       {
+        "command": "(( disk > disk_max ))",
+        "role": "Comparaison entière",
+        "example": "if (( disk > disk_max )); then exit 2; fi"
+       }
+      ],
+      "pitfalls": [
+       "Utiliser [ $a > $b ] : en shell, > redirige dans un fichier au lieu de comparer.",
+       "Sortir avec 0 en cas d'alerte : le superviseur croira que tout va bien."
+      ]
+     },
+     "lab": {
+      "task": "Écris healthcheck.sh qui lit srv/etc/app/app.env (DISK_MAX, LATENCY_MAX) et les mesures srv/var/lib/app/disk.pct et latency.ms. Affiche « ALERT disk=<d> latency=<l> » et sort en 2 si un seuil est dépassé ; « OK disk=<d> latency=<l> » et 0 sinon ; « MISSING <fichier> » et 1 si une entrée manque. Les seuils doivent être surchargeables par les arguments $1 (disque) et $2 (latence).",
+      "steps": [
+       "Charge app.env et vérifie l'existence des fichiers de mesures",
+       "Compare les valeurs aux seuils et choisis le code de sortie",
+       "Teste le cas nominal (exit 2) et le cas surchargé (bash healthcheck.sh 95 500 → OK)"
+      ],
+      "files": {
+       "srv/etc/app/app.env": "DISK_MAX=85\nLATENCY_MAX=300\n",
+       "srv/var/lib/app/disk.pct": "92\n",
+       "srv/var/lib/app/latency.ms": "410\n",
+       "srv/var/lib/app/version": "2.4.1\n"
+      },
+      "dirs": [
+       "srv/var/lib/app"
+      ],
+      "checks": [
+       {
+        "id": "script-existe",
+        "type": "file_exists",
+        "path": "healthcheck.sh",
+        "label": "healthcheck.sh est présent"
+       },
+       {
+        "id": "alerte-code",
+        "type": "run",
+        "cmd": "bash healthcheck.sh >/dev/null 2>&1; test $? -eq 2 && echo PASS",
+        "expect": "PASS",
+        "label": "Seuils dépassés → code de sortie 2"
+       },
+       {
+        "id": "alerte-message",
+        "type": "run",
+        "cmd": "bash healthcheck.sh | grep -q 'disk=92' && bash healthcheck.sh | grep -q 'latency=410' && echo PASS",
+        "expect": "PASS",
+        "label": "Le message d'alerte contient les mesures réelles"
+       },
+       {
+        "id": "override-ok",
+        "type": "run",
+        "cmd": "bash healthcheck.sh 95 500 | grep -q '^OK' && echo PASS",
+        "expect": "PASS",
+        "label": "Les seuils sont surchargeables par arguments ($1, $2)"
+       },
+       {
+        "id": "fichier-manquant",
+        "type": "run",
+        "cmd": "mv srv/var/lib/app/latency.ms latency.bak && (bash healthcheck.sh; echo code=$?) | grep -q 'code=1' && mv latency.bak srv/var/lib/app/latency.ms && echo PASS",
+        "expect": "PASS",
+        "label": "Fichier de mesure manquant → code 1 avec message MISSING"
+       }
+      ],
+      "hints": [
+       "disk=$(<\"srv/var/lib/app/disk.pct\") lit tout le fichier dans une variable.",
+       "Pense à tester l'existence des trois fichiers avant de comparer."
+      ],
+      "solution": "cat > healthcheck.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nenv_file=\"srv/etc/app/app.env\"\ndisk_file=\"srv/var/lib/app/disk.pct\"\nlat_file=\"srv/var/lib/app/latency.ms\"\nfor f in \"$env_file\" \"$disk_file\" \"$lat_file\"; do\n  [[ -f \"$f\" ]] || { echo \"MISSING $f\"; exit 1; }\ndone\nsource \"$env_file\"\ndisk_max=\"${1:-$DISK_MAX}\"\nlat_max=\"${2:-$LATENCY_MAX}\"\ndisk=$(<\"$disk_file\")\nlat=$(<\"$lat_file\")\nif (( disk > disk_max )) || (( lat > lat_max )); then\n  echo \"ALERT disk=$disk latency=$lat\"\n  exit 2\nfi\necho \"OK disk=$disk latency=$lat\"\nBASH\nchmod +x healthcheck.sh\nbash healthcheck.sh 95 500\n"
+     },
+     "remediation": "Un healthcheck doit être court, sans dépendance réseau non bornée, et testé pour ses trois codes de sortie. En production, expose-le via systemd (ExecStartPost) ou une sonde Kubernetes readiness/liveness."
+    },
+    {
+     "id": "m03-02",
+     "title": "Normaliser un lot de fichiers",
+     "brief": "La boîte de réception contient des noms de fichiers ingérables. Écris le script qui les normalise, les archive et journalise l'opération.",
+     "difficulty": "medium",
+     "points": 160,
+     "estimated_minutes": 40,
+     "tags": [
+      "boucles",
+      "sed",
+      "manifeste",
+      "automatisation"
+     ],
+     "objectives": [
+      "Boucler sur les fichiers d'un dossier",
+      "Normaliser des noms de fichiers de façon stable",
+      "Produire un manifeste de traçabilité"
+     ],
+     "lesson": {
+      "summary": "Renommer à la main est une perte de temps et une source d'erreurs. Une boucle Bash + sed produit des noms déterministes, déplace les fichiers et journalise chaque correspondance dans un manifeste : c'est la base d'un traitement de données reproductible.",
+      "sections": [
+       {
+        "id": "boucle",
+        "name": "for sur les fichiers",
+        "content": "for f in dossier/* parcourt les entrées. Toujours protéger le corps avec [[ -f \"$f\" ]] || continue pour ignorer les dossiers et les motifs non résolus."
+       },
+       {
+        "id": "slug",
+        "name": "Fabriquer un nom propre",
+        "content": "Un slug est minuscule, sans accents, sans espaces, avec un jeu de caractères restreint. tr, sed -E 's/[^a-z0-9.]+/-/g' et la suppression des tirets en bordure suffisent."
+       },
+       {
+        "id": "tracabilite",
+        "name": "Manifeste",
+        "content": "Un CSV original;nouveau;octets permet de rejouer, vérifier ou annuler un traitement. Sans manifeste, un renommage en masse est irréversible."
+       }
+      ],
+      "references": [
+       {
+        "command": "for f in inbox/*; do ...; done",
+        "role": "Boucler sur des fichiers",
+        "example": "for f in inbox/*; do [[ -f \"$f\" ]] || continue; done"
+       },
+       {
+        "command": "tr '[:upper:]' '[:lower:]'",
+        "role": "Passer en minuscules",
+        "example": "printf '%s' \"$base\" | tr '[:upper:]' '[:lower:]'"
+       },
+       {
+        "command": "sed -E 's/[^a-z0-9.]+/-/g'",
+        "role": "Nettoyer un nom",
+        "example": "sed -E 's/[^a-z0-9.]+/-/g; s/^-|-$//g'"
+       }
+      ],
+      "pitfalls": [
+       "Renommer sans manifeste : impossible de revenir en arrière.",
+       "Oublier les accents : ils produisent des noms imprévisibles selon la locale."
+      ]
+     },
+     "lab": {
+      "task": "Écris normaliser.sh qui : crée archive/, renomme chaque fichier d'inbox/ en slug (minuscules, accents retirés, séparateurs -, accents et caractères spéciaux éliminés), le déplace dans archive/, et ajoute une ligne original;nouveau;octets à manifeste.csv (en-tête inclus). Le dossier inbox/ doit être vide à la fin.",
+      "steps": [
+       "Écris la boucle sur inbox/* et génère le slug",
+       "Déplace le fichier et calcule sa taille avec wc -c",
+       "Ajoute l'en-tête au manifeste puis vérifie les 6 lignes de données"
+      ],
+      "files": {
+       "inbox/2025 01 - Facture ACME.pdf.txt": "Facture ACME, montant 1200 EUR.\n",
+       "inbox/2025 01 - Facture Globex.pdf.txt": "Facture Globex, montant 980 EUR.\n",
+       "inbox/Rapport Incident #12.txt": "Incident 12 : indisponibilité 14 min.\n",
+       "inbox/Note Réunion Équipe.txt": "Compte rendu de réunion hebdomadaire.\n",
+       "inbox/Export Client (final).txt": "Export des clients actifs.\n",
+       "inbox/Inventaire 2024-12.txt": "Inventaire de décembre.\n"
+      },
+      "dirs": [
+       "inbox"
+      ],
+      "checks": [
+       {
+        "id": "archive-6",
+        "type": "run",
+        "cmd": "test -d archive && test $(ls archive | wc -l) -eq 6 && echo PASS",
+        "expect": "PASS",
+        "label": "Les 6 fichiers sont archivés"
+       },
+       {
+        "id": "inbox-vide",
+        "type": "run",
+        "cmd": "test -z \"$(ls -A inbox)\" && echo PASS",
+        "expect": "PASS",
+        "label": "inbox/ est vide"
+       },
+       {
+        "id": "manifeste",
+        "type": "run",
+        "cmd": "test $(wc -l < manifeste.csv) -eq 7 && head -1 manifeste.csv | grep -q 'original;nouveau;octets' && echo PASS",
+        "expect": "PASS",
+        "label": "manifeste.csv contient l'en-tête et 6 lignes"
+       },
+       {
+        "id": "slug",
+        "type": "run",
+        "cmd": "ls archive | grep -qx '2025-01-facture-acme.pdf.txt' && echo PASS",
+        "expect": "PASS",
+        "label": "Le nom normalisé 2025-01-facture-acme.pdf.txt est exact"
+       },
+       {
+        "id": "sans-espace",
+        "type": "run",
+        "cmd": "! ls archive | grep -q ' ' && echo PASS",
+        "expect": "PASS",
+        "label": "Aucun nom de fichier ne contient d'espace"
+       }
+      ],
+      "hints": [
+       "Traite les accents avant le remplacement générique : sed -e 's/é/e/g' -e 's/è/e/g' ...",
+       "Enchaîne s/[^a-z0-9.]/-/g puis s/--*/-/g et supprime les tirets aux extrémités."
+      ],
+      "solution": "#!/usr/bin/env bash\nset -euo pipefail\nmkdir -p archive\nprintf 'original;nouveau;octets\\n' > manifeste.csv\nfor src in inbox/*; do\n  [[ -f \"$src\" ]] || continue\n  base=$(basename \"$src\")\n  slug=$(printf '%s' \"$base\" | tr '[:upper:]' '[:lower:]' \\\n    | sed -e 's/é/e/g' -e 's/è/e/g' -e 's/ê/e/g' -e 's/à/a/g' -e 's/ç/c/g' -e 's/ù/u/g' \\\n    | sed -E 's/[^a-z0-9.]+/-/g; s/--*/-/g; s/^-//; s/-$//')\n  mv -- \"$src\" \"archive/$slug\"\n  printf '%s;%s;%s\\n' \"$base\" \"$slug\" \"$(wc -c < \"archive/$slug\")\" >> manifeste.csv\ndone"
+     },
+     "remediation": "En production, préfère un identifiant immuable (UUID, hash) au nom de fichier, et stocke les métadonnées en base. Le manifeste est ton journal d'audit : conserve-le avec les fichiers."
+    }
+   ]
+  }
+ ]
 }

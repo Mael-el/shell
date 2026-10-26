@@ -50,6 +50,8 @@ backend/
   curriculum.py           chargement + validation + sérialisation du contenu
   curriculum/level-*.json contenu pédagogique (7 fichiers, 36 missions)
 frontend/shellforge-app/  React 19 + Vite (parcours, mission, console, progression)
+  src/index.css           jetons de design (palette terminal, typographie mono)
+  src/App.css             composants : panneaux, console, vérification, badges
 scripts/selfcheck_curriculum.py  auto-contrôle : joue chaque solution et vérifie les preuves
 scripts/dev.sh            démarre backend + frontend en une commande
 tests/test_api_smoke.py   tests de l'API et du moteur de laboratoire

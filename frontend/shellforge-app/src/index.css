@@ -1,22 +1,29 @@
+/* SHELLFORGE — feuille de base : terminal phosphore.
+   Palette volontairement réduite : noir charbon, vert phosphore, cyan, rouge alerte. */
+
 :root {
-  --bg: #060911;
-  --bg-elev: #0c1322;
-  --panel: rgba(15, 23, 42, 0.72);
-  --panel-solid: #0d1526;
-  --border: rgba(148, 163, 184, 0.16);
-  --border-strong: rgba(148, 163, 184, 0.3);
-  --text: #e6edf7;
-  --muted: #93a4bd;
-  --dim: #6b7c96;
-  --accent: #38bdf8;
-  --accent-soft: rgba(56, 189, 248, 0.14);
-  --ok: #34d399;
-  --warn: #fbbf24;
-  --danger: #fb7185;
-  --radius: 16px;
-  --shadow: 0 24px 60px -32px rgba(2, 6, 23, 0.9);
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #040706;
+  --bg-deep: #020403;
+  --surface: #070d0b;
+  --panel: rgba(9, 17, 14, 0.82);
+  --panel-solid: #081210;
+  --border: rgba(61, 255, 162, 0.14);
+  --border-strong: rgba(61, 255, 162, 0.34);
+  --text: #dcf6e8;
+  --muted: #86a99a;
+  --dim: #6b8c7e;
+  --accent: #3dffa2;
+  --accent-2: #35e0ff;
+  --accent-soft: rgba(61, 255, 162, 0.1);
+  --ok: #3dffa2;
+  --warn: #ffc857;
+  --danger: #ff5f7e;
+  --radius: 4px;
+  --radius-lg: 6px;
+  --mono: ui-monospace, "JetBrains Mono", "IBM Plex Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow: 0 18px 44px -30px rgba(0, 0, 0, 0.95);
   color-scheme: dark;
+  font-family: var(--mono);
 }
 
 * {
@@ -32,12 +39,49 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(56, 189, 248, 0.16), transparent 60%),
-    radial-gradient(900px 500px at 88% 0%, rgba(244, 114, 182, 0.12), transparent 55%),
-    var(--bg);
+    radial-gradient(900px 480px at 50% -12%, rgba(61, 255, 162, 0.08), transparent 72%),
+    linear-gradient(180deg, #050a08, var(--bg-deep) 55%, #040807);
   color: var(--text);
+  font-family: var(--mono);
+  font-size: 15px;
   line-height: 1.6;
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Grille technique en fond, estompée vers le bas. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(61, 255, 162, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 255, 162, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 72%);
+}
+
+/* Balayage CRT très discret, au-dessus du contenu mais transparent aux clics. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.22) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.22;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 a {
@@ -53,7 +97,7 @@ button {
 code,
 pre,
 kbd {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mono);
 }
 
 h1,
@@ -71,7 +115,8 @@ ol {
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.35);
+  background: rgba(61, 255, 162, 0.28);
+  color: #eafff5;
 }
 
 ::-webkit-scrollbar {
@@ -79,7 +124,29 @@ ol {
   height: 10px;
 }
 
+::-webkit-scrollbar-track {
+  background: #050b09;
+}
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.28);
-  border-radius: 999px;
+  background: rgba(61, 255, 162, 0.22);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(61, 255, 162, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  body::after {
+    display: none;
+  }
 }

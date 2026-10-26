@@ -1,538 +1,538 @@
 {
-  "level": 6,
-  "name": "Ingénierie de production",
-  "tagline": "Du laboratoire au système qui tourne",
-  "description": "Infrastructure as code, CI de sécurité, observabilité, gestion d'incident et projet final integré : les compétences qui transforment un attaquant en ingénieur.",
-  "icon": "🏗️",
-  "accent": "#22d3ee",
-  "modules": [
+ "level": 6,
+ "name": "Ingénierie de production",
+ "tagline": "Du laboratoire au système qui tourne",
+ "description": "Infrastructure as code, CI de sécurité, observabilité, gestion d'incident et projet final integré : les compétences qui transforment un attaquant en ingénieur.",
+ "icon": "🏗️",
+ "accent": "#b08cff",
+ "modules": [
+  {
+   "id": "m14",
+   "title": "Automatisation, CI et observabilité",
+   "description": "Provisionner en code, industrialiser les tests de sécurité, mesurer un SLO et conduire un postmortem.",
+   "category": "ingenierie",
+   "difficulty": "hard",
+   "missions": [
     {
-      "id": "m14",
-      "title": "Automatisation, CI et observabilité",
-      "description": "Provisionner en code, industrialiser les tests de sécurité, mesurer un SLO et conduire un postmortem.",
-      "category": "ingenierie",
-      "difficulty": "hard",
-      "missions": [
-        {
-          "id": "m14-01",
-          "title": "Infrastructure as code et pipeline CI",
-          "brief": "Tout ce qui a été fait à la main doit désormais être reproductible, versionné et vérifié à chaque commit.",
-          "difficulty": "hard",
-          "points": 500,
-          "estimated_minutes": 50,
-          "tags": [
-            "IaC",
-            "CI",
-            "Makefile",
-            "idempotence"
-          ],
-          "objectives": [
-            "Écrire un provisionnement idempotent avec mode --check",
-            "Structurer un pipeline CI avec lint, tests et sécurité",
-            "Exposer des tâches reproductibles via Makefile"
-          ],
-          "lesson": {
-            "summary": "L'infrastructure as code applique aux serveurs les principes du logiciel : versionnement, revue, tests, reproductibilité. Un pipeline CI devient le garde-fou collectif : il refuse une contribution qui casse les tests ou introduit un secret.",
-            "sections": [
-              {
-                "id": "iac",
-                "name": "Idempotence et mode --check",
-                "content": "Un script de provisionnement doit pouvoir vérifier l'état sans rien modifier (--check, sortie 0 si conforme). Cela permet de l'intégrer dans une supervision ou un pipeline, exactement comme un test."
-              },
-              {
-                "id": "ci",
-                "name": "Un pipeline utile",
-                "content": "Trois jobs suffisent pour commencer : lint (style, erreurs évidentes), test (unitaires), security (scan de secrets et d'analyses statiques). Chaque job doit échouer vite et produire un message actionnable."
-              },
-              {
-                "id": "make",
-                "name": "Un point d'entrée unique",
-                "content": "make lint, make test, make security : le développeur n'a pas à deviner la commande exacte. Le Makefile documente et standardise, et le pipeline appelle les mêmes cibles que la machine locale."
-              }
-            ],
-            "references": [
-              {
-                "command": "provision.sh --check",
-                "role": "Vérifier sans modifier",
-                "example": "bash infra/provision.sh --check"
-              },
-              {
-                "command": "runs-on: ubuntu-latest",
-                "role": "Exécuteur CI",
-                "example": "jobs:\n  test:\n    runs-on: ubuntu-latest"
-              },
-              {
-                "command": "make -n test",
-                "role": "Afficher sans exécuter",
-                "example": "make -n test"
-              }
-            ],
-            "pitfalls": [
-              "Pipeline qui ne teste que le succès : il faut au moins un test qui échoue volontairement en local.",
-              "Provisionnement qui réécrit tout à chaque exécution : impossible de détecter une dérive."
-            ]
-          },
-          "lab": {
-            "task": "Dans le dépôt fourni : écris infra/provision.sh (idempotent, crée les dossiers/données et infra/state/provisioned, mode --check qui sort 0 si tout est conforme), .github/workflows/ci.yml (jobs lint, test, security, sur push et pull_request), Makefile (cibles lint test security build) et docs/runbook.md.",
-            "steps": [
-              "Conçois l'état désiré et la fonction de vérification",
-              "Écris le workflow avec trois jobs distincts",
-              "Vérifie avec make -n et deux exécutions du provisionnement"
-            ],
-            "files": {
-              "repo/app.py": "def add(a, b):\n    return a + b\n\n\ndef health():\n    return {'status': 'ok'}\n",
-              "repo/tests/test_app.py": "from app import add, health\n\n\ndef test_add():\n    assert add(2, 3) == 5\n\n\ndef test_health():\n    assert health()['status'] == 'ok'\n",
-              "repo/README.md": "# Service de demonstration\n\nLancer les tests : pytest -q\n",
-              "repo/requirements.txt": "pytest\n"
-            },
-            "dirs": [
-              "repo",
-              "repo/tests",
-              "docs"
-            ],
-            "checks": [
-              {
-                "id": "idempotent",
-                "type": "run",
-                "cmd": "bash infra/provision.sh >/dev/null && bash infra/provision.sh >/dev/null && test -f infra/state/provisioned && echo PASS",
-                "expect": "PASS",
-                "label": "Deux exécutions produisent un état stable et marqué provisionné"
-              },
-              {
-                "id": "check-mode",
-                "type": "run",
-                "cmd": "bash infra/provision.sh >/dev/null && bash infra/provision.sh --check >/dev/null && echo PASS",
-                "expect": "PASS",
-                "label": "Le mode --check sort en 0 quand l'état est conforme"
-              },
-              {
-                "id": "ci-jobs",
-                "type": "run",
-                "cmd": "grep -q 'runs-on' .github/workflows/ci.yml && grep -q 'pytest' .github/workflows/ci.yml && grep -qi 'gitleaks\\|semgrep\\|trivy' .github/workflows/ci.yml && echo PASS",
-                "expect": "PASS",
-                "label": "Le pipeline contient tests et analyse de sécurité"
-              },
-              {
-                "id": "ci-trigger",
-                "type": "file_contains",
-                "path": ".github/workflows/ci.yml",
-                "pattern": "^on:",
-                "label": "Le pipeline est déclenché sur les événements du dépôt"
-              },
-              {
-                "id": "makefile",
-                "type": "run",
-                "cmd": "make -n test | grep -q 'pytest' && make -n security | grep -qiE 'gitleaks|semgrep|trivy' && echo PASS",
-                "expect": "PASS",
-                "label": "Les cibles make test et make security sont opérationnelles"
-              },
-              {
-                "id": "strict",
-                "type": "run",
-                "cmd": "bash -n infra/provision.sh && grep -q 'set -euo pipefail' infra/provision.sh && echo PASS",
-                "expect": "PASS",
-                "label": "Le script de provisionnement est en mode strict"
-              }
-            ],
-            "hints": [
-              "Pour --check, compare un fichier d'état (hash des fichiers gérés) à l'état réel et sors en 1 si divergence.",
-              "Le Makefile peut appeler les mêmes commandes que la CI : une seule source de vérité."
-            ],
-            "solution": "mkdir -p infra .github/workflows\ncat > infra/provision.sh <<'SH'\n#!/usr/bin/env bash\nset -euo pipefail\ncheck=false\n[[ \"${1:-}\" == \"--check\" ]] && check=true\nmkdir -p srv/app srv/logs infra/state\ncat > srv/app/config.yml <<'EOF'\napp:\n  name: shellforge\n  env: production\nEOF\nsum=$(sha256sum srv/app/config.yml | cut -d' ' -f1)\nif $check; then\n  grep -qx \"$sum\" infra/state/provisioned 2>/dev/null && exit 0\n  echo 'derive detectee' >&2\n  exit 1\nfi\necho \"$sum\" > infra/state/provisioned\necho 'provisionnement conforme'\nSH\nchmod +x infra/provision.sh\ncat > .github/workflows/ci.yml <<'YML'\nname: ci\non:\n  push:\n    branches: [main]\n  pull_request:\njobs:\n  lint:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pip install ruff && ruff check .\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pip install -r repo/requirements.txt && pytest -q repo/tests\n  security:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: gitleaks detect --no-git\nYML\nprintf '.PHONY: lint test security build\n\nlint:\n\truff check .\n\ntest:\n\tpytest -q repo/tests\n\nsecurity:\n\tgitleaks detect --no-git\n\nbuild:\n\tpython3 -m compileall repo\n' > Makefile\nprintf '# Runbook\\n\\n1. make test avant toute contribution.\\n2. make security avant toute mise en production.\\n3. infra/provision.sh --check en surveillance pour detecter la derive.\\n' > docs/runbook.md",
-            "remediation": "Ajoute des protections de branche (review obligatoire, CI verte), un environnement de préproduction, et un scan planifié de l'infrastructure réelle pour détecter la dérive. La CI doit être la même que celle exécutée en local."
-          }
-        },
-        {
-          "id": "m14-02",
-          "title": "SLO, observabilité et postmortem",
-          "brief": "Le service est en incident. Calcule le SLO, déclenche l'alerte, écris le postmortem sans accuser personne.",
-          "difficulty": "hard",
-          "points": 520,
-          "estimated_minutes": 50,
-          "tags": [
-            "SLO",
-            "p95",
-            "alerting",
-            "postmortem"
-          ],
-          "objectives": [
-            "Calculer disponibilité, taux d'erreur et p95",
-            "Définir un SLO et un budget d'erreur",
-            "Rédiger un postmortem actionnable (RCA, 5 pourquoi)"
-          ],
-          "lesson": {
-            "summary": "Un SLO traduit une promesse en chiffre mesurable. Le budget d'erreur (1 - SLO) autorise un certain niveau d'échec : le consommer trop vite impose de geler les nouveautés au profit de la fiabilité. Le postmortem est l'outil d'apprentissage : cause racine, actions datées, aucune recherche de coupable.",
-            "sections": [
-              {
-                "id": "mesures",
-                "name": "Mesurer juste",
-                "content": "Disponibilité = requêtes réussies / requêtes totales. p95 = latence en dessous de laquelle se trouvent 95 % des requêtes (bien plus parlant qu'une moyenne). Un taux d'erreur de 10 % sur 20 requêtes est déjà un incident."
-              },
-              {
-                "id": "slo",
-                "name": "SLO et budget",
-                "content": "SLO 99,5 % sur 30 jours → budget d'erreur 0,5 %, soit environ 3 h 36 de dysfonctionnement toléré. Un dépassement impose une priorisation explicite : fiabiliser avant d'ajouter des fonctionnalités."
-              },
-              {
-                "id": "postmortem",
-                "name": "Postmortem sans blâme",
-                "content": "Chronologie factuelle, impact, cause racine (5 pourquoi), ce qui a fonctionné, actions préventives avec responsable et date. L'objectif est l'amélioration du système, pas la sanction individuelle."
-              }
-            ],
-            "references": [
-              {
-                "command": "awk '$2>=500' metrics.log | wc -l",
-                "role": "Compter les erreurs",
-                "example": "awk '$2>=500' ops/metrics.log | wc -l"
-              },
-              {
-                "command": "sort -n | awk 'NR==ceil(0.95*N)'",
-                "role": "Calcul du p95",
-                "example": "sort -n lats.txt | awk '{a[NR]=$1} END {print a[int(NR*0.95)]}'"
-              },
-              {
-                "command": "name: HighErrorRate",
-                "role": "Règle d'alerte",
-                "example": "name: HighErrorRate expr: rate(errors[5m]) > 0.02"
-              }
-            ],
-            "pitfalls": [
-              "Utiliser la moyenne de latence : elle masque complètement la queue de distribution.",
-              "Écrire un postmortem sans action datée : la même panne reviendra."
-            ]
-          },
-          "lab": {
-            "task": "Depuis ops/metrics.log, écris monitor.sh qui affiche disponibilité, taux d'erreur et p95 et sort en 2 si le SLO (99,5 % et p95 ≤ 800 ms) est violé. Produis slo.md (SLO, budget, calcul), ops/alerts.yml (règles erreurs et latence) et postmortem.md (chronologie, cause racine via 5 pourquoi, actions datées).",
-            "steps": [
-              "Calcule les indicateurs à la main pour les vérifier",
-              "Implémente monitor.sh avec un code de sortie exploitable",
-              "Rédige le postmortem en remontant à la cause racine"
-            ],
-            "files": {
-              "ops/metrics.log": "2025-01-12T09:00:01Z 200 120\n2025-01-12T09:00:11Z 200 140\n2025-01-12T09:00:21Z 200 980\n2025-01-12T09:00:31Z 500 2100\n2025-01-12T09:00:41Z 200 150\n2025-01-12T09:00:51Z 200 160\n2025-01-12T09:01:01Z 503 3000\n2025-01-12T09:01:11Z 200 130\n2025-01-12T09:01:21Z 200 900\n2025-01-12T09:01:31Z 200 145\n2025-01-12T09:01:41Z 200 155\n2025-01-12T09:01:51Z 200 170\n2025-01-12T09:02:01Z 200 190\n2025-01-12T09:02:11Z 200 122\n2025-01-12T09:02:21Z 200 133\n2025-01-12T09:02:31Z 200 144\n2025-01-12T09:02:41Z 200 166\n2025-01-12T09:02:51Z 200 177\n2025-01-12T09:03:01Z 200 188\n2025-01-12T09:03:11Z 200 199\n",
-              "ops/incident.md": "# Journal d incident\n\n09:00 : premiere alerte latence.\n09:01 : deux erreurs 5xx, saturation de la base.\n09:03 : retour a la normale apres redemarrage du pool de connexions.\n",
-              "docs/slo-template.md": "# Modele SLO\n\nObjectif : disponibilite mensuelle.\nFenetre : 30 jours.\n"
-            },
-            "dirs": [
-              "ops",
-              "docs"
-            ],
-            "checks": [
-              {
-                "id": "monitor",
-                "type": "run",
-                "cmd": "bash monitor.sh | grep -qi 'disponibilite\\|disponibilité' && echo PASS",
-                "expect": "PASS",
-                "label": "monitor.sh affiche la disponibilité"
-              },
-              {
-                "id": "monitor-code",
-                "type": "run",
-                "cmd": "bash monitor.sh >/dev/null 2>&1; test $? -eq 2 && echo PASS",
-                "expect": "PASS",
-                "label": "monitor.sh sort en 2 quand le SLO est violé"
-              },
-              {
-                "id": "p95",
-                "type": "run",
-                "cmd": "bash monitor.sh | grep -qi 'p95' && bash monitor.sh | grep -q '3000\\|2[0-9][0-9][0-9]' && echo PASS",
-                "expect": "PASS",
-                "label": "Le p95 reflète la queue de latence (incident)"
-              },
-              {
-                "id": "slo-doc",
-                "type": "run",
-                "cmd": "grep -q '99.5' slo.md && grep -qi 'budget' slo.md && echo PASS",
-                "expect": "PASS",
-                "label": "slo.md définit le SLO et le budget d'erreur"
-              },
-              {
-                "id": "alertes",
-                "type": "run",
-                "cmd": "grep -qiE 'latency|p95|erreur|error' ops/alerts.yml && echo PASS",
-                "expect": "PASS",
-                "label": "Les règles d'alerte couvrent erreurs ou latence"
-              },
-              {
-                "id": "postmortem",
-                "type": "run",
-                "cmd": "grep -qiE 'cause racine|root cause' postmortem.md && grep -qi 'action' postmortem.md && echo PASS",
-                "expect": "PASS",
-                "label": "Le postmortem contient une cause racine et des actions"
-              }
-            ],
-            "hints": [
-              "p95 sur 20 mesures = 19e valeur triée (int(0.95*20)=19).",
-              "La cause racine est le pool de connexions saturé, pas « la base a planté » : remonte les 5 pourquoi."
-            ],
-            "solution": "cat > monitor.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ntotal=$(wc -l < ops/metrics.log)\nerrors=$(awk '$2>=500' ops/metrics.log | wc -l)\navail=$(awk -v e=\"$errors\" -v t=\"$total\" 'BEGIN { printf \"%.2f\", (t-e)/t*100 }')\nrate=$(awk -v e=\"$errors\" -v t=\"$total\" 'BEGIN { printf \"%.2f\", e/t*100 }')\np95=$(awk '{print $3}' ops/metrics.log | sort -n | awk '{a[NR]=$1} END { print a[int(NR*0.95)] }')\necho \"disponibilite: ${avail}%\"\necho \"taux d erreur: ${rate}%\"\necho \"latence p95: ${p95} ms\"\nawk -v a=\"$avail\" -v p=\"$p95\" 'BEGIN { exit (a<99.5 || p>800) ? 2 : 0 }'\nBASH\ncat > slo.md <<'MD'\n# SLO du service\n\n- Disponibilite : 99.5% sur 30 jours glissants.\n- Latence : p95 <= 800 ms.\n- Budget d'erreur : 0.5%, soit environ 3 h 36 par mois.\n- Mesure : monitor.sh, code de sortie 2 si le SLO est viole.\nMD\ncat > ops/alerts.yml <<'YML'\ngroups:\n  - name: slo-portail\n    rules:\n      - alert: HighErrorRate\n        expr: rate(http_requests_total{status=~\"5..\"}[5m]) > 0.02\n        for: 5m\n        labels:\n          severity: critical\n      - alert: LatencyP95Breach\n        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.8\n        for: 10m\n        labels:\n          severity: warning\n      - alert: ErrorBudgetBurn\n        expr: slo:error_budget_remaining < 0.2\n        for: 1h\n        labels:\n          severity: warning\nYML\ncat > postmortem.md <<'MD'\n# Postmortem - incident du 12 janvier\n\n## Impact\nDeux erreurs 5xx et une latence p95 a 3000 ms pendant environ 3 minutes.\n\n## Cause racine\nLe pool de connexions applicatif etait dimensionne pour 5 connexions alors que la charge atteignait 50 requetes par seconde.\n5 pourquoi : latence -> file d'attente -> pool sature -> dimensionnement jamais revu -> absence de test de charge en CI.\n\n## Actions\n- Redimensionner le pool de connexions (equipe dev, J+2).\n- Ajouter un test de charge en CI (equipe qualite, J+10).\n- Alerter sur la profondeur de file et le budget d'erreur (equipe infra, J+5).\nMD\nchmod +x monitor.sh\nbash monitor.sh || true\n"
-          },
-          "remediation": "Instrumente le service (métriques, logs structurés, traces), automatise les alertes sur SLO et planifie des tests de charge. Un SLO non mesuré automatiquement n'existe pas."
-        }
+     "id": "m14-01",
+     "title": "Infrastructure as code et pipeline CI",
+     "brief": "Tout ce qui a été fait à la main doit désormais être reproductible, versionné et vérifié à chaque commit.",
+     "difficulty": "hard",
+     "points": 500,
+     "estimated_minutes": 50,
+     "tags": [
+      "IaC",
+      "CI",
+      "Makefile",
+      "idempotence"
+     ],
+     "objectives": [
+      "Écrire un provisionnement idempotent avec mode --check",
+      "Structurer un pipeline CI avec lint, tests et sécurité",
+      "Exposer des tâches reproductibles via Makefile"
+     ],
+     "lesson": {
+      "summary": "L'infrastructure as code applique aux serveurs les principes du logiciel : versionnement, revue, tests, reproductibilité. Un pipeline CI devient le garde-fou collectif : il refuse une contribution qui casse les tests ou introduit un secret.",
+      "sections": [
+       {
+        "id": "iac",
+        "name": "Idempotence et mode --check",
+        "content": "Un script de provisionnement doit pouvoir vérifier l'état sans rien modifier (--check, sortie 0 si conforme). Cela permet de l'intégrer dans une supervision ou un pipeline, exactement comme un test."
+       },
+       {
+        "id": "ci",
+        "name": "Un pipeline utile",
+        "content": "Trois jobs suffisent pour commencer : lint (style, erreurs évidentes), test (unitaires), security (scan de secrets et d'analyses statiques). Chaque job doit échouer vite et produire un message actionnable."
+       },
+       {
+        "id": "make",
+        "name": "Un point d'entrée unique",
+        "content": "make lint, make test, make security : le développeur n'a pas à deviner la commande exacte. Le Makefile documente et standardise, et le pipeline appelle les mêmes cibles que la machine locale."
+       }
+      ],
+      "references": [
+       {
+        "command": "provision.sh --check",
+        "role": "Vérifier sans modifier",
+        "example": "bash infra/provision.sh --check"
+       },
+       {
+        "command": "runs-on: ubuntu-latest",
+        "role": "Exécuteur CI",
+        "example": "jobs:\n  test:\n    runs-on: ubuntu-latest"
+       },
+       {
+        "command": "make -n test",
+        "role": "Afficher sans exécuter",
+        "example": "make -n test"
+       }
+      ],
+      "pitfalls": [
+       "Pipeline qui ne teste que le succès : il faut au moins un test qui échoue volontairement en local.",
+       "Provisionnement qui réécrit tout à chaque exécution : impossible de détecter une dérive."
       ]
+     },
+     "lab": {
+      "task": "Dans le dépôt fourni : écris infra/provision.sh (idempotent, crée les dossiers/données et infra/state/provisioned, mode --check qui sort 0 si tout est conforme), .github/workflows/ci.yml (jobs lint, test, security, sur push et pull_request), Makefile (cibles lint test security build) et docs/runbook.md.",
+      "steps": [
+       "Conçois l'état désiré et la fonction de vérification",
+       "Écris le workflow avec trois jobs distincts",
+       "Vérifie avec make -n et deux exécutions du provisionnement"
+      ],
+      "files": {
+       "repo/app.py": "def add(a, b):\n    return a + b\n\n\ndef health():\n    return {'status': 'ok'}\n",
+       "repo/tests/test_app.py": "from app import add, health\n\n\ndef test_add():\n    assert add(2, 3) == 5\n\n\ndef test_health():\n    assert health()['status'] == 'ok'\n",
+       "repo/README.md": "# Service de demonstration\n\nLancer les tests : pytest -q\n",
+       "repo/requirements.txt": "pytest\n"
+      },
+      "dirs": [
+       "repo",
+       "repo/tests",
+       "docs"
+      ],
+      "checks": [
+       {
+        "id": "idempotent",
+        "type": "run",
+        "cmd": "bash infra/provision.sh >/dev/null && bash infra/provision.sh >/dev/null && test -f infra/state/provisioned && echo PASS",
+        "expect": "PASS",
+        "label": "Deux exécutions produisent un état stable et marqué provisionné"
+       },
+       {
+        "id": "check-mode",
+        "type": "run",
+        "cmd": "bash infra/provision.sh >/dev/null && bash infra/provision.sh --check >/dev/null && echo PASS",
+        "expect": "PASS",
+        "label": "Le mode --check sort en 0 quand l'état est conforme"
+       },
+       {
+        "id": "ci-jobs",
+        "type": "run",
+        "cmd": "grep -q 'runs-on' .github/workflows/ci.yml && grep -q 'pytest' .github/workflows/ci.yml && grep -qi 'gitleaks\\|semgrep\\|trivy' .github/workflows/ci.yml && echo PASS",
+        "expect": "PASS",
+        "label": "Le pipeline contient tests et analyse de sécurité"
+       },
+       {
+        "id": "ci-trigger",
+        "type": "file_contains",
+        "path": ".github/workflows/ci.yml",
+        "pattern": "^on:",
+        "label": "Le pipeline est déclenché sur les événements du dépôt"
+       },
+       {
+        "id": "makefile",
+        "type": "run",
+        "cmd": "make -n test | grep -q 'pytest' && make -n security | grep -qiE 'gitleaks|semgrep|trivy' && echo PASS",
+        "expect": "PASS",
+        "label": "Les cibles make test et make security sont opérationnelles"
+       },
+       {
+        "id": "strict",
+        "type": "run",
+        "cmd": "bash -n infra/provision.sh && grep -q 'set -euo pipefail' infra/provision.sh && echo PASS",
+        "expect": "PASS",
+        "label": "Le script de provisionnement est en mode strict"
+       }
+      ],
+      "hints": [
+       "Pour --check, compare un fichier d'état (hash des fichiers gérés) à l'état réel et sors en 1 si divergence.",
+       "Le Makefile peut appeler les mêmes commandes que la CI : une seule source de vérité."
+      ],
+      "solution": "mkdir -p infra .github/workflows\ncat > infra/provision.sh <<'SH'\n#!/usr/bin/env bash\nset -euo pipefail\ncheck=false\n[[ \"${1:-}\" == \"--check\" ]] && check=true\nmkdir -p srv/app srv/logs infra/state\ncat > srv/app/config.yml <<'EOF'\napp:\n  name: shellforge\n  env: production\nEOF\nsum=$(sha256sum srv/app/config.yml | cut -d' ' -f1)\nif $check; then\n  grep -qx \"$sum\" infra/state/provisioned 2>/dev/null && exit 0\n  echo 'derive detectee' >&2\n  exit 1\nfi\necho \"$sum\" > infra/state/provisioned\necho 'provisionnement conforme'\nSH\nchmod +x infra/provision.sh\ncat > .github/workflows/ci.yml <<'YML'\nname: ci\non:\n  push:\n    branches: [main]\n  pull_request:\njobs:\n  lint:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pip install ruff && ruff check .\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pip install -r repo/requirements.txt && pytest -q repo/tests\n  security:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: gitleaks detect --no-git\nYML\nprintf '.PHONY: lint test security build\n\nlint:\n\truff check .\n\ntest:\n\tpytest -q repo/tests\n\nsecurity:\n\tgitleaks detect --no-git\n\nbuild:\n\tpython3 -m compileall repo\n' > Makefile\nprintf '# Runbook\\n\\n1. make test avant toute contribution.\\n2. make security avant toute mise en production.\\n3. infra/provision.sh --check en surveillance pour detecter la derive.\\n' > docs/runbook.md",
+      "remediation": "Ajoute des protections de branche (review obligatoire, CI verte), un environnement de préproduction, et un scan planifié de l'infrastructure réelle pour détecter la dérive. La CI doit être la même que celle exécutée en local."
+     }
     },
     {
-      "id": "m15",
-      "title": "Projet final : audit complet",
-      "description": "Un audit de bout en bout : reconnaissance, exploitation contrôlée, rapport exécutif, remédiation et re-test.",
-      "category": "ingenierie",
-      "difficulty": "expert",
-      "missions": [
-        {
-          "id": "m15-01",
-          "title": "Audit final — reconnaissance et chaîne d'accès",
-          "brief": "Voici une entreprise fictive complète. Construis sa carte d'attaque et démontre une chaîne d'accès crédible.",
-          "difficulty": "expert",
-          "points": 600,
-          "estimated_minutes": 60,
-          "tags": [
-            "projet",
-            "recon",
-            "chaîne d'attaque",
-            "preuves"
-          ],
-          "objectives": [
-            "Consolider toutes les sources de reconnaissance",
-            "Prioriser les findings en un tableau unique",
-            "Documenter une chaîne d'accès sans exécution réelle"
-          ],
-          "lesson": {
-            "summary": "Un audit se juge à la cohérence entre la reconnaissance, les findings et la chaîne d'attaque. Chaque ligne du tableau doit renvoyer à une preuve, et la chaîne d'accès doit relier des faiblesses réelles sans en inventer.",
-            "sections": [
-              {
-                "id": "consolidation",
-                "name": "Une seule vérité",
-                "content": "DNS, scan, code source et configuration produisent des signaux qui se recoupent. Un finding non corroboré est classé « à vérifier » : c'est la marque d'un audit honnête."
-              },
-              {
-                "id": "chaine",
-                "name": "Chaîne d'attaque",
-                "content": "Accès initial (injection, secret exposé), exécution (cron, service), élévation (sudo, SUID), impact (données, pivot). On ne démontre que les étapes nécessaires à la preuve d'impact, dans le périmètre autorisé."
-              }
-            ],
-            "references": [
-              {
-                "command": "grep -c 'Critique' audit/02-findings.csv",
-                "role": "Compter les critiques",
-                "example": "grep -c 'Critique' audit/02-findings.csv"
-              },
-              {
-                "command": "find corp -type f | sort",
-                "role": "Inventorier les sources",
-                "example": "find corp -type f | sort"
-              }
-            ],
-            "pitfalls": [
-              "Inventer un finding non prouvé pour « compléter » le rapport.",
-              "Oublier de relier la chaîne d'accès aux preuves."
-            ]
-          },
-          "lab": {
-            "task": "Analyse corp/ (zone DNS, scan, application, configurations). Produis audit/01-recon.md (actifs, exposition, points d'entrée), audit/02-findings.csv (au moins 8 findings avec id,severite,actif,preuve,cvss), audit/03-acces.md (chaîne d'accès étapes 1 à 5, périmètre rappelé) et audit/preuves/ contenant au moins une preuve par finding critique.",
-            "steps": [
-              "Consolide les sources et repère les actifs sensibles",
-              "Classe les findings par sévérité avec preuve",
-              "Relie les findings en une chaîne d'accès crédible"
-            ],
-            "files": {
-              "corp/dns/zone.txt": "corp.shellforge.test. 3600 IN A 192.0.2.50\nwww.corp.shellforge.test. 300 IN A 192.0.2.50\nportal.corp.shellforge.test. 300 IN A 192.0.2.51\nstaging.corp.shellforge.test. 60 IN A 192.0.2.99\nvpn.corp.shellforge.test. 3600 IN A 198.51.100.5\nfiles.corp.shellforge.test. 300 IN A 192.0.2.60\ndb.corp.shellforge.test. 300 IN A 10.40.0.10\n",
-              "corp/scan/ports.csv": "host,ip,ports\nportal,192.0.2.51,22/80/443/3306\nfiles,192.0.2.60,139/445\nstaging,192.0.2.99,22/3000/8080\nvpn,198.51.100.5,443\n",
-              "corp/app/src/login.php": "<?php\n$u = $_POST['username'];\n$p = $_POST['password'];\n$q = \"SELECT id FROM users WHERE username = '$u' AND password = '$p'\";\n$r = mysqli_query($conn, $q);\n",
-              "corp/app/.env": "DB_PASSWORD=Corp!2025\nAPI_KEY=9a8b7c6d5e4f3a2b\n",
-              "corp/host/sudo-l.txt": "student may run: (root) NOPASSWD: /usr/bin/tar, /usr/bin/systemctl restart portal\n",
-              "corp/host/cron-perms.txt": "-rwxrwxrwx 1 root root /opt/scripts/report.sh\n",
-              "corp/host/sshd_config": "PermitRootLogin yes\nPasswordAuthentication yes\n",
-              "corp/notes/scope.md": "Perimetre autorise : 192.0.2.0/24 hors 192.0.2.99 (staging exclu du test actif). 10.40.0.0/24 : lecture seule, aucune exploitation.\n"
-            },
-            "dirs": [
-              "corp/dns",
-              "corp/scan",
-              "corp/app/src",
-              "corp/host",
-              "corp/notes",
-              "audit/preuves"
-            ],
-            "checks": [
-              {
-                "id": "recon",
-                "type": "run",
-                "cmd": "test -s audit/01-recon.md && grep -qi 'staging' audit/01-recon.md && grep -qi '192.0.2.51' audit/01-recon.md && echo PASS",
-                "expect": "PASS",
-                "label": "La reconnaissance couvre les actifs et l'exposition"
-              },
-              {
-                "id": "findings",
-                "type": "run",
-                "cmd": "test $(wc -l < audit/02-findings.csv) -ge 9 && head -1 audit/02-findings.csv | grep -qi 'severite' && grep -qi 'critique' audit/02-findings.csv && echo PASS",
-                "expect": "PASS",
-                "label": "Le tableau contient au moins 8 findings priorisés"
-              },
-              {
-                "id": "findings-preuve",
-                "type": "run",
-                "cmd": "grep -qi 'login.php' audit/02-findings.csv && grep -qi 'tar' audit/02-findings.csv && grep -qi 'smb\\|445' audit/02-findings.csv && echo PASS",
-                "expect": "PASS",
-                "label": "Les findings majeurs (SQLi, sudo tar, SMB) sont présents"
-              },
-              {
-                "id": "acces",
-                "type": "run",
-                "cmd": "grep -qiE 'injection|sql' audit/03-acces.md && grep -qiE 'sudo|cron' audit/03-acces.md && grep -qi 'perimetre\\|périmètre' audit/03-acces.md && echo PASS",
-                "expect": "PASS",
-                "label": "La chaîne d'accès est documentée et rappelle le périmètre"
-              },
-              {
-                "id": "preuves",
-                "type": "run",
-                "cmd": "test $(ls audit/preuves | wc -l) -ge 3 && echo PASS",
-                "expect": "PASS",
-                "label": "Au moins 3 preuves sont archivées"
-              },
-              {
-                "id": "scope",
-                "type": "run",
-                "cmd": "grep -qi 'staging' audit/03-acces.md && echo PASS",
-                "expect": "PASS",
-                "label": "Le périmètre exclut explicitement staging"
-              }
-            ],
-            "hints": [
-              "Le port 3306 exposé sur portal et le .env lisible forment un chemin d'accès direct aux données.",
-              "staging est hors périmètre actif : tu peux le citer mais pas l'exploiter, et cela doit apparaître dans le rapport."
-            ],
-            "solution": "mkdir -p audit/preuves\nprintf '# Reconnaissance - corp.shellforge.test\\n\\n## Actifs publics\\n- portal (192.0.2.51) : 22/80/443/3306 - application metier\\n- files (192.0.2.60) : 139/445 (SMB) - partages internes\\n- vpn (198.51.100.5) : 443 - point d acces unique\\n- staging (192.0.2.99) : HORS PERIMETRE ACTIF (cite, non teste)\\n\\n## Actifs internes references\\n- db (10.40.0.10) : base de donnees, lecture seule autorisee\\n\\n## Points d entree\\n- Application portal : PHP avec concatenation SQL, .env expose dans le depot.\\n- files : SMBv1 sans signature, acces guest probable.\\n- Hosts : sudo NOPASSWD tar, cron world-writable, SSH avec mot de passe et root autorise.\\n' > audit/01-recon.md\nprintf 'id,severite,actif,preuve,cvss\\nF1,Critique,portal,corp/app/src/login.php concatenation SQL,9.8\\nF2,Critique,portal,corp/app/.env secrets en clair,8.6\\nF3,Critique,host,fixed cron-perms world-writable,8.8\\nF4,Elevee,host,sudo NOPASSWD tar (GTFOBins),8.1\\nF5,Elevee,files,port 445 expose SMB,7.4\\nF6,Elevee,host,PermitRootLogin yes,7.2\\nF7,Moyenne,portal,MySQL 3306 expose,6.5\\nF8,Moyenne,vpn,endpoint unique sans MFA documente,5.3\\n' > audit/02-findings.csv\nprintf 'Ref F3, F4, F6, F1\\n' > audit/preuves/lire-moi.txt\ncp corp/app/src/login.php audit/preuves/F1-login.php\ncp corp/host/cron-perms.txt audit/preuves/F3-cron.txt\ncp corp/host/sudo-l.txt audit/preuves/F4-sudo.txt\nprintf '# Chaine d acces (demonstration, perimetre respecte)\\n\\nPerimetre : 192.0.2.0/24 hors staging, 10.40.0.0/24 en lecture seule.\\n\\n1. Acces initial : injection SQL sur portal /login.php (preuve F1) -> contournement d authentification.\\n2. Collecte : lecture du .env (F2) -> identifiants base et cle API.\\n3. Execution : script cron world-writable sur host (F3) execute par root -> shell root sous 60 s.\\n4. Elevation confirmee : sudo NOPASSWD tar (F4) comme chemin alternatif documente par GTFOBins.\\n5. Impact : acces aux donnees de db (lecture seule, aucune exfiltration) et pivot theorique vers 10.40.0.0/24 non execute.\\n\\nHors perimetre : staging et vpn non testes activement.\\n' > audit/03-acces.md"
-          },
-          "remediation": "Un audit n'est utile que s'il débouche sur un plan priorisé : c'est l'objet de la mission suivante. Conserve les preuves horodatées et la trace des actions effectuées."
-        },
-        {
-          "id": "m15-02",
-          "title": "Audit final — rapport, remédiation et re-test",
-          "brief": "Dernière étape : transformer l'audit en décisions. Un rapport exécutif, un plan daté, des détections et un re-test automatique.",
-          "difficulty": "expert",
-          "points": 650,
-          "estimated_minutes": 60,
-          "tags": [
-            "rapport exécutif",
-            "plan",
-            "détection",
-            "retest"
-          ],
-          "objectives": [
-            "Écrire une synthèse compréhensible en trois minutes",
-            "Prioriser et planifier la remédiation",
-            "Prouver la correction par un re-test automatisé"
-          ],
-          "lesson": {
-            "summary": "La valeur d'un audit se mesure à l'exécution du plan. Un rapport exécutif énonce le risque global, les trois actions qui changent tout et le coût de l'inaction. Le re-test transforme la promesse de correction en fait vérifié.",
-            "sections": [
-              {
-                "id": "executif",
-                "name": "Trois minutes pour convaincre",
-                "content": "Risque global, impacts métier (données, continuité, conformité), trois priorités, échéances. Aucune commande dans cette section : elle est lue par la direction."
-              },
-              {
-                "id": "plan",
-                "name": "Plan exécutable",
-                "content": "Chaque action a un identifiant de finding, un responsable, un délai et un critère de sortie mesurable. Sans critère de sortie, on ne sait pas quand c'est fini."
-              },
-              {
-                "id": "retest",
-                "name": "Re-test",
-                "content": "Le re-test automatise les critères de sortie : configuration durcie, code corrigé, permissions restreintes. Il s'exécute à chaque déploiement pour éviter la régression."
-              }
-            ],
-            "references": [
-              {
-                "command": "bash audit/retest.sh",
-                "role": "Vérifier les correctifs",
-                "example": "bash audit/retest.sh | tee audit/retest.log"
-              },
-              {
-                "command": "grep -c ',Critique,' plan",
-                "role": "Compter les actions critiques",
-                "example": "grep -c 'Critique' audit/plan-remediation.csv"
-              }
-            ],
-            "pitfalls": [
-              "Plan sans critère de sortie : impossible de clore un finding.",
-              "Re-test manuel : il sera oublié dès la deuxième itération."
-            ]
-          },
-          "lab": {
-            "task": "Produis audit/rapport-executif.md (risque global, 3 priorités, coût de l'inaction), audit/plan-remediation.csv (au moins 8 actions avec responsable, délai et critère de sortie), audit/detections.md (auditd, SIEM, FIM), audit/retest.sh qui contrôle les correctifs de fixed/ et affiche PASS, puis exécute-le vers audit/retest.log.",
-            "steps": [
-              "Rédige la synthèse à partir des findings",
-              "Construis le plan avec critères de sortie",
-              "Écris retest.sh et conserve sa sortie dans retest.log"
-            ],
-            "files": {
-              "audit/02-findings.csv": "id,severite,actif,preuve,cvss\nF1,Critique,portal,login.php concatenation SQL,9.8\nF2,Critique,portal,.env secrets en clair,8.6\nF3,Critique,host,cron world-writable,8.8\nF4,Elevee,host,sudo NOPASSWD tar,8.1\nF5,Elevee,files,SMB expose,7.4\nF6,Elevee,host,PermitRootLogin yes,7.2\nF7,Moyenne,portal,MySQL 3306 expose,6.5\nF8,Moyenne,vpn,sans MFA documente,5.3\n",
-              "audit/03-acces.md": "1. Injection SQL sur portal.\n2. Secrets du .env.\n3. Cron world-writable.\nPerimetre : staging exclu.\n",
-              "fixed/login.php": "<?php\n$stmt = $conn->prepare('SELECT id FROM users WHERE username = ?');\n$stmt->bind_param('s', $u);\n$stmt->execute();\n",
-              "fixed/app.env.mode": "600\n",
-              "fixed/cron-perms.txt": "-rwxr-xr-x 1 root root /opt/scripts/report.sh\n",
-              "fixed/sudoers.d/app": "appsvc ALL=(root) NOPASSWD: /usr/bin/systemctl restart portal\n",
-              "fixed/sshd_config": "PermitRootLogin no\nPasswordAuthentication no\n",
-              "fixed/nftables.conf": "table inet filter { chain input { type filter hook input priority 0; policy drop; } }\n",
-              "fixed/smb.conf": "server min protocol = SMB2\nserver signing = mandatory\nrestrict anonymous = 2\n"
-            },
-            "dirs": [
-              "audit",
-              "fixed"
-            ],
-            "checks": [
-              {
-                "id": "executif",
-                "type": "run",
-                "cmd": "grep -qi 'risque global' audit/rapport-executif.md && grep -qi 'priorit' audit/rapport-executif.md && echo PASS",
-                "expect": "PASS",
-                "label": "Le rapport exécutif énonce le risque global et les priorités"
-              },
-              {
-                "id": "plan",
-                "type": "run",
-                "cmd": "test $(wc -l < audit/plan-remediation.csv) -ge 9 && head -1 audit/plan-remediation.csv | grep -qi 'critere\\|critère' && echo PASS",
-                "expect": "PASS",
-                "label": "Le plan contient 8 actions avec critères de sortie"
-              },
-              {
-                "id": "detections",
-                "type": "run",
-                "cmd": "grep -qi 'auditd\\|audit' audit/detections.md && grep -qi 'SIEM\\|fim' audit/detections.md && echo PASS",
-                "expect": "PASS",
-                "label": "Les détections couvrent auditd et FIM/SIEM"
-              },
-              {
-                "id": "retest",
-                "type": "run",
-                "cmd": "bash audit/retest.sh | grep -q 'PASS' && echo PASS",
-                "expect": "PASS",
-                "label": "retest.sh valide tous les correctifs"
-              },
-              {
-                "id": "retest-log",
-                "type": "run",
-                "cmd": "grep -q 'PASS' audit/retest.log && echo PASS",
-                "expect": "PASS",
-                "label": "La sortie du re-test est archivée"
-              },
-              {
-                "id": "coherence",
-                "type": "run",
-                "cmd": "grep -qi 'F1' audit/plan-remediation.csv && grep -qi 'F3' audit/plan-remediation.csv && echo PASS",
-                "expect": "PASS",
-                "label": "Le plan est relié aux findings par identifiant"
-              }
-            ],
-            "hints": [
-              "Critères de sortie mesurables : « PasswordAuthentication no présent », « retest PASS », « .env en 600 ».",
-              "retest.sh doit échouer (exit 1) si un correctif est retiré : c'est ce qui le rend utile en CI."
-            ],
-            "solution": "cat > audit/rapport-executif.md <<'MD'\n# Rapport executif - Audit de securite\n\n## Risque global : ELEVE\nTrois vulnerabilites critiques permettent une compromission complete du portail et de l'hote applicatif en moins d'une heure. Les donnees clients sont exposees via une base accessible et un fichier d'identifiants en clair.\n\n## Trois priorites\n1. Corriger l'injection SQL du portail (F1) - 7 jours - impact direct sur la confidentialite.\n2. Neutraliser les privileges excessifs (F3 cron, F4 sudo) - 3 jours - impact sur la compromission totale.\n3. Rotationner les secrets et retirer le .env du depot (F2) - 5 jours.\n\n## Couts de l'inaction\nFuite de donnees personnelles (notification sous 72 h), perte de disponibilite, atteinte a la reputation.\n\n## Suivi\nRe-test automatise a J+7 puis a chaque deploiement (audit/retest.sh).\nMD\ncat > audit/plan-remediation.csv <<'CSV'\nfinding,severite,action,responsable,delai_jours,critere de sortie\nF1,Critique,Requetes preparees sur login.php,dev,7,retest PASS et tests d injection en CI\nF2,Critique,Revoquer et rotationner les secrets + .env 600,dev+securite,5,.env en 600 et secret absent du depot\nF3,Critique,chmod 755 root:root sur /opt/scripts,infra,3,retest PASS sur cron-perms\nF4,Elevee,sudo limite a systemctl restart portal,infra,7,retest PASS sur sudoers\nF5,Elevee,SMBv2 signe et guest retire,infra,14,retest PASS sur smb.conf\nF6,Elevee,SSH cle uniquement et root interdit,infra,7,retest PASS sur sshd_config\nF7,Moyenne,Restreindre 3306 au reseau applicatif,infra,21,nftables policy drop + regle source\nF8,Moyenne,MFA sur le VPN,securite,30,preuve de configuration MFA\nCSV\ncat > audit/detections.md <<'MD'\n# Detections proposees\n\n## auditd\n- -w /etc/passwd -p wa -k identity\n- -w /etc/sudoers.d/ -p wa -k sudoers\n- -w /opt/scripts/ -p wa -k cron_scripts\n- -a always,exit -F arch=b64 -S execve -F path=/usr/bin/tar -k gtfobins\n\n## FIM\n- Baseline des binaires SUID et des capabilities.\n- Controle quotidien des permissions de /opt/scripts et des fichiers .env.\n\n## SIEM\n- Requetes SQL en erreur > 20/min sur portal.\n- Authentifications SSH par mot de passe apres correction (doit etre zero).\n- Connexions SMBv1 detectees (doit etre zero).\nMD\ncat > audit/retest.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nfail=0\ngrep -q 'prepare(' fixed/login.php || { echo 'FAIL F1'; fail=1; }\ngrep -qx 600 fixed/app.env.mode || { echo 'FAIL F2'; fail=1; }\ngrep -q -- '-rwxr-xr-x 1 root root' fixed/cron-perms.txt || { echo 'FAIL F3'; fail=1; }\ngrep -q 'systemctl restart portal' fixed/sudoers.d/app || { echo 'FAIL F4'; fail=1; }\ngrep -q 'SMB2' fixed/smb.conf || { echo 'FAIL F5'; fail=1; }\ngrep -q 'PasswordAuthentication no' fixed/sshd_config || { echo 'FAIL F6'; fail=1; }\ngrep -q 'policy drop' fixed/nftables.conf || { echo 'FAIL F7'; fail=1; }\nif [[ $fail -eq 0 ]]; then echo PASS; else echo FAIL; exit 1; fi\nBASH\nchmod +x audit/retest.sh\nbash audit/retest.sh | tee audit/retest.log\n"
-          },
-          "remediation": "Prolonge le travail : intègre le re-test en CI, planifie un audit trimestriel, et transforme chaque finding en test de non-régression. C'est ainsi qu'une organisation progresse au lieu de répéter les mêmes erreurs."
-        }
+     "id": "m14-02",
+     "title": "SLO, observabilité et postmortem",
+     "brief": "Le service est en incident. Calcule le SLO, déclenche l'alerte, écris le postmortem sans accuser personne.",
+     "difficulty": "hard",
+     "points": 520,
+     "estimated_minutes": 50,
+     "tags": [
+      "SLO",
+      "p95",
+      "alerting",
+      "postmortem"
+     ],
+     "objectives": [
+      "Calculer disponibilité, taux d'erreur et p95",
+      "Définir un SLO et un budget d'erreur",
+      "Rédiger un postmortem actionnable (RCA, 5 pourquoi)"
+     ],
+     "lesson": {
+      "summary": "Un SLO traduit une promesse en chiffre mesurable. Le budget d'erreur (1 - SLO) autorise un certain niveau d'échec : le consommer trop vite impose de geler les nouveautés au profit de la fiabilité. Le postmortem est l'outil d'apprentissage : cause racine, actions datées, aucune recherche de coupable.",
+      "sections": [
+       {
+        "id": "mesures",
+        "name": "Mesurer juste",
+        "content": "Disponibilité = requêtes réussies / requêtes totales. p95 = latence en dessous de laquelle se trouvent 95 % des requêtes (bien plus parlant qu'une moyenne). Un taux d'erreur de 10 % sur 20 requêtes est déjà un incident."
+       },
+       {
+        "id": "slo",
+        "name": "SLO et budget",
+        "content": "SLO 99,5 % sur 30 jours → budget d'erreur 0,5 %, soit environ 3 h 36 de dysfonctionnement toléré. Un dépassement impose une priorisation explicite : fiabiliser avant d'ajouter des fonctionnalités."
+       },
+       {
+        "id": "postmortem",
+        "name": "Postmortem sans blâme",
+        "content": "Chronologie factuelle, impact, cause racine (5 pourquoi), ce qui a fonctionné, actions préventives avec responsable et date. L'objectif est l'amélioration du système, pas la sanction individuelle."
+       }
+      ],
+      "references": [
+       {
+        "command": "awk '$2>=500' metrics.log | wc -l",
+        "role": "Compter les erreurs",
+        "example": "awk '$2>=500' ops/metrics.log | wc -l"
+       },
+       {
+        "command": "sort -n | awk 'NR==ceil(0.95*N)'",
+        "role": "Calcul du p95",
+        "example": "sort -n lats.txt | awk '{a[NR]=$1} END {print a[int(NR*0.95)]}'"
+       },
+       {
+        "command": "name: HighErrorRate",
+        "role": "Règle d'alerte",
+        "example": "name: HighErrorRate expr: rate(errors[5m]) > 0.02"
+       }
+      ],
+      "pitfalls": [
+       "Utiliser la moyenne de latence : elle masque complètement la queue de distribution.",
+       "Écrire un postmortem sans action datée : la même panne reviendra."
       ]
+     },
+     "lab": {
+      "task": "Depuis ops/metrics.log, écris monitor.sh qui affiche disponibilité, taux d'erreur et p95 et sort en 2 si le SLO (99,5 % et p95 ≤ 800 ms) est violé. Produis slo.md (SLO, budget, calcul), ops/alerts.yml (règles erreurs et latence) et postmortem.md (chronologie, cause racine via 5 pourquoi, actions datées).",
+      "steps": [
+       "Calcule les indicateurs à la main pour les vérifier",
+       "Implémente monitor.sh avec un code de sortie exploitable",
+       "Rédige le postmortem en remontant à la cause racine"
+      ],
+      "files": {
+       "ops/metrics.log": "2025-01-12T09:00:01Z 200 120\n2025-01-12T09:00:11Z 200 140\n2025-01-12T09:00:21Z 200 980\n2025-01-12T09:00:31Z 500 2100\n2025-01-12T09:00:41Z 200 150\n2025-01-12T09:00:51Z 200 160\n2025-01-12T09:01:01Z 503 3000\n2025-01-12T09:01:11Z 200 130\n2025-01-12T09:01:21Z 200 900\n2025-01-12T09:01:31Z 200 145\n2025-01-12T09:01:41Z 200 155\n2025-01-12T09:01:51Z 200 170\n2025-01-12T09:02:01Z 200 190\n2025-01-12T09:02:11Z 200 122\n2025-01-12T09:02:21Z 200 133\n2025-01-12T09:02:31Z 200 144\n2025-01-12T09:02:41Z 200 166\n2025-01-12T09:02:51Z 200 177\n2025-01-12T09:03:01Z 200 188\n2025-01-12T09:03:11Z 200 199\n",
+       "ops/incident.md": "# Journal d incident\n\n09:00 : premiere alerte latence.\n09:01 : deux erreurs 5xx, saturation de la base.\n09:03 : retour a la normale apres redemarrage du pool de connexions.\n",
+       "docs/slo-template.md": "# Modele SLO\n\nObjectif : disponibilite mensuelle.\nFenetre : 30 jours.\n"
+      },
+      "dirs": [
+       "ops",
+       "docs"
+      ],
+      "checks": [
+       {
+        "id": "monitor",
+        "type": "run",
+        "cmd": "bash monitor.sh | grep -qi 'disponibilite\\|disponibilité' && echo PASS",
+        "expect": "PASS",
+        "label": "monitor.sh affiche la disponibilité"
+       },
+       {
+        "id": "monitor-code",
+        "type": "run",
+        "cmd": "bash monitor.sh >/dev/null 2>&1; test $? -eq 2 && echo PASS",
+        "expect": "PASS",
+        "label": "monitor.sh sort en 2 quand le SLO est violé"
+       },
+       {
+        "id": "p95",
+        "type": "run",
+        "cmd": "bash monitor.sh | grep -qi 'p95' && bash monitor.sh | grep -q '3000\\|2[0-9][0-9][0-9]' && echo PASS",
+        "expect": "PASS",
+        "label": "Le p95 reflète la queue de latence (incident)"
+       },
+       {
+        "id": "slo-doc",
+        "type": "run",
+        "cmd": "grep -q '99.5' slo.md && grep -qi 'budget' slo.md && echo PASS",
+        "expect": "PASS",
+        "label": "slo.md définit le SLO et le budget d'erreur"
+       },
+       {
+        "id": "alertes",
+        "type": "run",
+        "cmd": "grep -qiE 'latency|p95|erreur|error' ops/alerts.yml && echo PASS",
+        "expect": "PASS",
+        "label": "Les règles d'alerte couvrent erreurs ou latence"
+       },
+       {
+        "id": "postmortem",
+        "type": "run",
+        "cmd": "grep -qiE 'cause racine|root cause' postmortem.md && grep -qi 'action' postmortem.md && echo PASS",
+        "expect": "PASS",
+        "label": "Le postmortem contient une cause racine et des actions"
+       }
+      ],
+      "hints": [
+       "p95 sur 20 mesures = 19e valeur triée (int(0.95*20)=19).",
+       "La cause racine est le pool de connexions saturé, pas « la base a planté » : remonte les 5 pourquoi."
+      ],
+      "solution": "cat > monitor.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ntotal=$(wc -l < ops/metrics.log)\nerrors=$(awk '$2>=500' ops/metrics.log | wc -l)\navail=$(awk -v e=\"$errors\" -v t=\"$total\" 'BEGIN { printf \"%.2f\", (t-e)/t*100 }')\nrate=$(awk -v e=\"$errors\" -v t=\"$total\" 'BEGIN { printf \"%.2f\", e/t*100 }')\np95=$(awk '{print $3}' ops/metrics.log | sort -n | awk '{a[NR]=$1} END { print a[int(NR*0.95)] }')\necho \"disponibilite: ${avail}%\"\necho \"taux d erreur: ${rate}%\"\necho \"latence p95: ${p95} ms\"\nawk -v a=\"$avail\" -v p=\"$p95\" 'BEGIN { exit (a<99.5 || p>800) ? 2 : 0 }'\nBASH\ncat > slo.md <<'MD'\n# SLO du service\n\n- Disponibilite : 99.5% sur 30 jours glissants.\n- Latence : p95 <= 800 ms.\n- Budget d'erreur : 0.5%, soit environ 3 h 36 par mois.\n- Mesure : monitor.sh, code de sortie 2 si le SLO est viole.\nMD\ncat > ops/alerts.yml <<'YML'\ngroups:\n  - name: slo-portail\n    rules:\n      - alert: HighErrorRate\n        expr: rate(http_requests_total{status=~\"5..\"}[5m]) > 0.02\n        for: 5m\n        labels:\n          severity: critical\n      - alert: LatencyP95Breach\n        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.8\n        for: 10m\n        labels:\n          severity: warning\n      - alert: ErrorBudgetBurn\n        expr: slo:error_budget_remaining < 0.2\n        for: 1h\n        labels:\n          severity: warning\nYML\ncat > postmortem.md <<'MD'\n# Postmortem - incident du 12 janvier\n\n## Impact\nDeux erreurs 5xx et une latence p95 a 3000 ms pendant environ 3 minutes.\n\n## Cause racine\nLe pool de connexions applicatif etait dimensionne pour 5 connexions alors que la charge atteignait 50 requetes par seconde.\n5 pourquoi : latence -> file d'attente -> pool sature -> dimensionnement jamais revu -> absence de test de charge en CI.\n\n## Actions\n- Redimensionner le pool de connexions (equipe dev, J+2).\n- Ajouter un test de charge en CI (equipe qualite, J+10).\n- Alerter sur la profondeur de file et le budget d'erreur (equipe infra, J+5).\nMD\nchmod +x monitor.sh\nbash monitor.sh || true\n"
+     },
+     "remediation": "Instrumente le service (métriques, logs structurés, traces), automatise les alertes sur SLO et planifie des tests de charge. Un SLO non mesuré automatiquement n'existe pas."
     }
-  ]
+   ]
+  },
+  {
+   "id": "m15",
+   "title": "Projet final : audit complet",
+   "description": "Un audit de bout en bout : reconnaissance, exploitation contrôlée, rapport exécutif, remédiation et re-test.",
+   "category": "ingenierie",
+   "difficulty": "expert",
+   "missions": [
+    {
+     "id": "m15-01",
+     "title": "Audit final — reconnaissance et chaîne d'accès",
+     "brief": "Voici une entreprise fictive complète. Construis sa carte d'attaque et démontre une chaîne d'accès crédible.",
+     "difficulty": "expert",
+     "points": 600,
+     "estimated_minutes": 60,
+     "tags": [
+      "projet",
+      "recon",
+      "chaîne d'attaque",
+      "preuves"
+     ],
+     "objectives": [
+      "Consolider toutes les sources de reconnaissance",
+      "Prioriser les findings en un tableau unique",
+      "Documenter une chaîne d'accès sans exécution réelle"
+     ],
+     "lesson": {
+      "summary": "Un audit se juge à la cohérence entre la reconnaissance, les findings et la chaîne d'attaque. Chaque ligne du tableau doit renvoyer à une preuve, et la chaîne d'accès doit relier des faiblesses réelles sans en inventer.",
+      "sections": [
+       {
+        "id": "consolidation",
+        "name": "Une seule vérité",
+        "content": "DNS, scan, code source et configuration produisent des signaux qui se recoupent. Un finding non corroboré est classé « à vérifier » : c'est la marque d'un audit honnête."
+       },
+       {
+        "id": "chaine",
+        "name": "Chaîne d'attaque",
+        "content": "Accès initial (injection, secret exposé), exécution (cron, service), élévation (sudo, SUID), impact (données, pivot). On ne démontre que les étapes nécessaires à la preuve d'impact, dans le périmètre autorisé."
+       }
+      ],
+      "references": [
+       {
+        "command": "grep -c 'Critique' audit/02-findings.csv",
+        "role": "Compter les critiques",
+        "example": "grep -c 'Critique' audit/02-findings.csv"
+       },
+       {
+        "command": "find corp -type f | sort",
+        "role": "Inventorier les sources",
+        "example": "find corp -type f | sort"
+       }
+      ],
+      "pitfalls": [
+       "Inventer un finding non prouvé pour « compléter » le rapport.",
+       "Oublier de relier la chaîne d'accès aux preuves."
+      ]
+     },
+     "lab": {
+      "task": "Analyse corp/ (zone DNS, scan, application, configurations). Produis audit/01-recon.md (actifs, exposition, points d'entrée), audit/02-findings.csv (au moins 8 findings avec id,severite,actif,preuve,cvss), audit/03-acces.md (chaîne d'accès étapes 1 à 5, périmètre rappelé) et audit/preuves/ contenant au moins une preuve par finding critique.",
+      "steps": [
+       "Consolide les sources et repère les actifs sensibles",
+       "Classe les findings par sévérité avec preuve",
+       "Relie les findings en une chaîne d'accès crédible"
+      ],
+      "files": {
+       "corp/dns/zone.txt": "corp.shellforge.test. 3600 IN A 192.0.2.50\nwww.corp.shellforge.test. 300 IN A 192.0.2.50\nportal.corp.shellforge.test. 300 IN A 192.0.2.51\nstaging.corp.shellforge.test. 60 IN A 192.0.2.99\nvpn.corp.shellforge.test. 3600 IN A 198.51.100.5\nfiles.corp.shellforge.test. 300 IN A 192.0.2.60\ndb.corp.shellforge.test. 300 IN A 10.40.0.10\n",
+       "corp/scan/ports.csv": "host,ip,ports\nportal,192.0.2.51,22/80/443/3306\nfiles,192.0.2.60,139/445\nstaging,192.0.2.99,22/3000/8080\nvpn,198.51.100.5,443\n",
+       "corp/app/src/login.php": "<?php\n$u = $_POST['username'];\n$p = $_POST['password'];\n$q = \"SELECT id FROM users WHERE username = '$u' AND password = '$p'\";\n$r = mysqli_query($conn, $q);\n",
+       "corp/app/.env": "DB_PASSWORD=Corp!2025\nAPI_KEY=9a8b7c6d5e4f3a2b\n",
+       "corp/host/sudo-l.txt": "student may run: (root) NOPASSWD: /usr/bin/tar, /usr/bin/systemctl restart portal\n",
+       "corp/host/cron-perms.txt": "-rwxrwxrwx 1 root root /opt/scripts/report.sh\n",
+       "corp/host/sshd_config": "PermitRootLogin yes\nPasswordAuthentication yes\n",
+       "corp/notes/scope.md": "Perimetre autorise : 192.0.2.0/24 hors 192.0.2.99 (staging exclu du test actif). 10.40.0.0/24 : lecture seule, aucune exploitation.\n"
+      },
+      "dirs": [
+       "corp/dns",
+       "corp/scan",
+       "corp/app/src",
+       "corp/host",
+       "corp/notes",
+       "audit/preuves"
+      ],
+      "checks": [
+       {
+        "id": "recon",
+        "type": "run",
+        "cmd": "test -s audit/01-recon.md && grep -qi 'staging' audit/01-recon.md && grep -qi '192.0.2.51' audit/01-recon.md && echo PASS",
+        "expect": "PASS",
+        "label": "La reconnaissance couvre les actifs et l'exposition"
+       },
+       {
+        "id": "findings",
+        "type": "run",
+        "cmd": "test $(wc -l < audit/02-findings.csv) -ge 9 && head -1 audit/02-findings.csv | grep -qi 'severite' && grep -qi 'critique' audit/02-findings.csv && echo PASS",
+        "expect": "PASS",
+        "label": "Le tableau contient au moins 8 findings priorisés"
+       },
+       {
+        "id": "findings-preuve",
+        "type": "run",
+        "cmd": "grep -qi 'login.php' audit/02-findings.csv && grep -qi 'tar' audit/02-findings.csv && grep -qi 'smb\\|445' audit/02-findings.csv && echo PASS",
+        "expect": "PASS",
+        "label": "Les findings majeurs (SQLi, sudo tar, SMB) sont présents"
+       },
+       {
+        "id": "acces",
+        "type": "run",
+        "cmd": "grep -qiE 'injection|sql' audit/03-acces.md && grep -qiE 'sudo|cron' audit/03-acces.md && grep -qi 'perimetre\\|périmètre' audit/03-acces.md && echo PASS",
+        "expect": "PASS",
+        "label": "La chaîne d'accès est documentée et rappelle le périmètre"
+       },
+       {
+        "id": "preuves",
+        "type": "run",
+        "cmd": "test $(ls audit/preuves | wc -l) -ge 3 && echo PASS",
+        "expect": "PASS",
+        "label": "Au moins 3 preuves sont archivées"
+       },
+       {
+        "id": "scope",
+        "type": "run",
+        "cmd": "grep -qi 'staging' audit/03-acces.md && echo PASS",
+        "expect": "PASS",
+        "label": "Le périmètre exclut explicitement staging"
+       }
+      ],
+      "hints": [
+       "Le port 3306 exposé sur portal et le .env lisible forment un chemin d'accès direct aux données.",
+       "staging est hors périmètre actif : tu peux le citer mais pas l'exploiter, et cela doit apparaître dans le rapport."
+      ],
+      "solution": "mkdir -p audit/preuves\nprintf '# Reconnaissance - corp.shellforge.test\\n\\n## Actifs publics\\n- portal (192.0.2.51) : 22/80/443/3306 - application metier\\n- files (192.0.2.60) : 139/445 (SMB) - partages internes\\n- vpn (198.51.100.5) : 443 - point d acces unique\\n- staging (192.0.2.99) : HORS PERIMETRE ACTIF (cite, non teste)\\n\\n## Actifs internes references\\n- db (10.40.0.10) : base de donnees, lecture seule autorisee\\n\\n## Points d entree\\n- Application portal : PHP avec concatenation SQL, .env expose dans le depot.\\n- files : SMBv1 sans signature, acces guest probable.\\n- Hosts : sudo NOPASSWD tar, cron world-writable, SSH avec mot de passe et root autorise.\\n' > audit/01-recon.md\nprintf 'id,severite,actif,preuve,cvss\\nF1,Critique,portal,corp/app/src/login.php concatenation SQL,9.8\\nF2,Critique,portal,corp/app/.env secrets en clair,8.6\\nF3,Critique,host,fixed cron-perms world-writable,8.8\\nF4,Elevee,host,sudo NOPASSWD tar (GTFOBins),8.1\\nF5,Elevee,files,port 445 expose SMB,7.4\\nF6,Elevee,host,PermitRootLogin yes,7.2\\nF7,Moyenne,portal,MySQL 3306 expose,6.5\\nF8,Moyenne,vpn,endpoint unique sans MFA documente,5.3\\n' > audit/02-findings.csv\nprintf 'Ref F3, F4, F6, F1\\n' > audit/preuves/lire-moi.txt\ncp corp/app/src/login.php audit/preuves/F1-login.php\ncp corp/host/cron-perms.txt audit/preuves/F3-cron.txt\ncp corp/host/sudo-l.txt audit/preuves/F4-sudo.txt\nprintf '# Chaine d acces (demonstration, perimetre respecte)\\n\\nPerimetre : 192.0.2.0/24 hors staging, 10.40.0.0/24 en lecture seule.\\n\\n1. Acces initial : injection SQL sur portal /login.php (preuve F1) -> contournement d authentification.\\n2. Collecte : lecture du .env (F2) -> identifiants base et cle API.\\n3. Execution : script cron world-writable sur host (F3) execute par root -> shell root sous 60 s.\\n4. Elevation confirmee : sudo NOPASSWD tar (F4) comme chemin alternatif documente par GTFOBins.\\n5. Impact : acces aux donnees de db (lecture seule, aucune exfiltration) et pivot theorique vers 10.40.0.0/24 non execute.\\n\\nHors perimetre : staging et vpn non testes activement.\\n' > audit/03-acces.md"
+     },
+     "remediation": "Un audit n'est utile que s'il débouche sur un plan priorisé : c'est l'objet de la mission suivante. Conserve les preuves horodatées et la trace des actions effectuées."
+    },
+    {
+     "id": "m15-02",
+     "title": "Audit final — rapport, remédiation et re-test",
+     "brief": "Dernière étape : transformer l'audit en décisions. Un rapport exécutif, un plan daté, des détections et un re-test automatique.",
+     "difficulty": "expert",
+     "points": 650,
+     "estimated_minutes": 60,
+     "tags": [
+      "rapport exécutif",
+      "plan",
+      "détection",
+      "retest"
+     ],
+     "objectives": [
+      "Écrire une synthèse compréhensible en trois minutes",
+      "Prioriser et planifier la remédiation",
+      "Prouver la correction par un re-test automatisé"
+     ],
+     "lesson": {
+      "summary": "La valeur d'un audit se mesure à l'exécution du plan. Un rapport exécutif énonce le risque global, les trois actions qui changent tout et le coût de l'inaction. Le re-test transforme la promesse de correction en fait vérifié.",
+      "sections": [
+       {
+        "id": "executif",
+        "name": "Trois minutes pour convaincre",
+        "content": "Risque global, impacts métier (données, continuité, conformité), trois priorités, échéances. Aucune commande dans cette section : elle est lue par la direction."
+       },
+       {
+        "id": "plan",
+        "name": "Plan exécutable",
+        "content": "Chaque action a un identifiant de finding, un responsable, un délai et un critère de sortie mesurable. Sans critère de sortie, on ne sait pas quand c'est fini."
+       },
+       {
+        "id": "retest",
+        "name": "Re-test",
+        "content": "Le re-test automatise les critères de sortie : configuration durcie, code corrigé, permissions restreintes. Il s'exécute à chaque déploiement pour éviter la régression."
+       }
+      ],
+      "references": [
+       {
+        "command": "bash audit/retest.sh",
+        "role": "Vérifier les correctifs",
+        "example": "bash audit/retest.sh | tee audit/retest.log"
+       },
+       {
+        "command": "grep -c ',Critique,' plan",
+        "role": "Compter les actions critiques",
+        "example": "grep -c 'Critique' audit/plan-remediation.csv"
+       }
+      ],
+      "pitfalls": [
+       "Plan sans critère de sortie : impossible de clore un finding.",
+       "Re-test manuel : il sera oublié dès la deuxième itération."
+      ]
+     },
+     "lab": {
+      "task": "Produis audit/rapport-executif.md (risque global, 3 priorités, coût de l'inaction), audit/plan-remediation.csv (au moins 8 actions avec responsable, délai et critère de sortie), audit/detections.md (auditd, SIEM, FIM), audit/retest.sh qui contrôle les correctifs de fixed/ et affiche PASS, puis exécute-le vers audit/retest.log.",
+      "steps": [
+       "Rédige la synthèse à partir des findings",
+       "Construis le plan avec critères de sortie",
+       "Écris retest.sh et conserve sa sortie dans retest.log"
+      ],
+      "files": {
+       "audit/02-findings.csv": "id,severite,actif,preuve,cvss\nF1,Critique,portal,login.php concatenation SQL,9.8\nF2,Critique,portal,.env secrets en clair,8.6\nF3,Critique,host,cron world-writable,8.8\nF4,Elevee,host,sudo NOPASSWD tar,8.1\nF5,Elevee,files,SMB expose,7.4\nF6,Elevee,host,PermitRootLogin yes,7.2\nF7,Moyenne,portal,MySQL 3306 expose,6.5\nF8,Moyenne,vpn,sans MFA documente,5.3\n",
+       "audit/03-acces.md": "1. Injection SQL sur portal.\n2. Secrets du .env.\n3. Cron world-writable.\nPerimetre : staging exclu.\n",
+       "fixed/login.php": "<?php\n$stmt = $conn->prepare('SELECT id FROM users WHERE username = ?');\n$stmt->bind_param('s', $u);\n$stmt->execute();\n",
+       "fixed/app.env.mode": "600\n",
+       "fixed/cron-perms.txt": "-rwxr-xr-x 1 root root /opt/scripts/report.sh\n",
+       "fixed/sudoers.d/app": "appsvc ALL=(root) NOPASSWD: /usr/bin/systemctl restart portal\n",
+       "fixed/sshd_config": "PermitRootLogin no\nPasswordAuthentication no\n",
+       "fixed/nftables.conf": "table inet filter { chain input { type filter hook input priority 0; policy drop; } }\n",
+       "fixed/smb.conf": "server min protocol = SMB2\nserver signing = mandatory\nrestrict anonymous = 2\n"
+      },
+      "dirs": [
+       "audit",
+       "fixed"
+      ],
+      "checks": [
+       {
+        "id": "executif",
+        "type": "run",
+        "cmd": "grep -qi 'risque global' audit/rapport-executif.md && grep -qi 'priorit' audit/rapport-executif.md && echo PASS",
+        "expect": "PASS",
+        "label": "Le rapport exécutif énonce le risque global et les priorités"
+       },
+       {
+        "id": "plan",
+        "type": "run",
+        "cmd": "test $(wc -l < audit/plan-remediation.csv) -ge 9 && head -1 audit/plan-remediation.csv | grep -qi 'critere\\|critère' && echo PASS",
+        "expect": "PASS",
+        "label": "Le plan contient 8 actions avec critères de sortie"
+       },
+       {
+        "id": "detections",
+        "type": "run",
+        "cmd": "grep -qi 'auditd\\|audit' audit/detections.md && grep -qi 'SIEM\\|fim' audit/detections.md && echo PASS",
+        "expect": "PASS",
+        "label": "Les détections couvrent auditd et FIM/SIEM"
+       },
+       {
+        "id": "retest",
+        "type": "run",
+        "cmd": "bash audit/retest.sh | grep -q 'PASS' && echo PASS",
+        "expect": "PASS",
+        "label": "retest.sh valide tous les correctifs"
+       },
+       {
+        "id": "retest-log",
+        "type": "run",
+        "cmd": "grep -q 'PASS' audit/retest.log && echo PASS",
+        "expect": "PASS",
+        "label": "La sortie du re-test est archivée"
+       },
+       {
+        "id": "coherence",
+        "type": "run",
+        "cmd": "grep -qi 'F1' audit/plan-remediation.csv && grep -qi 'F3' audit/plan-remediation.csv && echo PASS",
+        "expect": "PASS",
+        "label": "Le plan est relié aux findings par identifiant"
+       }
+      ],
+      "hints": [
+       "Critères de sortie mesurables : « PasswordAuthentication no présent », « retest PASS », « .env en 600 ».",
+       "retest.sh doit échouer (exit 1) si un correctif est retiré : c'est ce qui le rend utile en CI."
+      ],
+      "solution": "cat > audit/rapport-executif.md <<'MD'\n# Rapport executif - Audit de securite\n\n## Risque global : ELEVE\nTrois vulnerabilites critiques permettent une compromission complete du portail et de l'hote applicatif en moins d'une heure. Les donnees clients sont exposees via une base accessible et un fichier d'identifiants en clair.\n\n## Trois priorites\n1. Corriger l'injection SQL du portail (F1) - 7 jours - impact direct sur la confidentialite.\n2. Neutraliser les privileges excessifs (F3 cron, F4 sudo) - 3 jours - impact sur la compromission totale.\n3. Rotationner les secrets et retirer le .env du depot (F2) - 5 jours.\n\n## Couts de l'inaction\nFuite de donnees personnelles (notification sous 72 h), perte de disponibilite, atteinte a la reputation.\n\n## Suivi\nRe-test automatise a J+7 puis a chaque deploiement (audit/retest.sh).\nMD\ncat > audit/plan-remediation.csv <<'CSV'\nfinding,severite,action,responsable,delai_jours,critere de sortie\nF1,Critique,Requetes preparees sur login.php,dev,7,retest PASS et tests d injection en CI\nF2,Critique,Revoquer et rotationner les secrets + .env 600,dev+securite,5,.env en 600 et secret absent du depot\nF3,Critique,chmod 755 root:root sur /opt/scripts,infra,3,retest PASS sur cron-perms\nF4,Elevee,sudo limite a systemctl restart portal,infra,7,retest PASS sur sudoers\nF5,Elevee,SMBv2 signe et guest retire,infra,14,retest PASS sur smb.conf\nF6,Elevee,SSH cle uniquement et root interdit,infra,7,retest PASS sur sshd_config\nF7,Moyenne,Restreindre 3306 au reseau applicatif,infra,21,nftables policy drop + regle source\nF8,Moyenne,MFA sur le VPN,securite,30,preuve de configuration MFA\nCSV\ncat > audit/detections.md <<'MD'\n# Detections proposees\n\n## auditd\n- -w /etc/passwd -p wa -k identity\n- -w /etc/sudoers.d/ -p wa -k sudoers\n- -w /opt/scripts/ -p wa -k cron_scripts\n- -a always,exit -F arch=b64 -S execve -F path=/usr/bin/tar -k gtfobins\n\n## FIM\n- Baseline des binaires SUID et des capabilities.\n- Controle quotidien des permissions de /opt/scripts et des fichiers .env.\n\n## SIEM\n- Requetes SQL en erreur > 20/min sur portal.\n- Authentifications SSH par mot de passe apres correction (doit etre zero).\n- Connexions SMBv1 detectees (doit etre zero).\nMD\ncat > audit/retest.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nfail=0\ngrep -q 'prepare(' fixed/login.php || { echo 'FAIL F1'; fail=1; }\ngrep -qx 600 fixed/app.env.mode || { echo 'FAIL F2'; fail=1; }\ngrep -q -- '-rwxr-xr-x 1 root root' fixed/cron-perms.txt || { echo 'FAIL F3'; fail=1; }\ngrep -q 'systemctl restart portal' fixed/sudoers.d/app || { echo 'FAIL F4'; fail=1; }\ngrep -q 'SMB2' fixed/smb.conf || { echo 'FAIL F5'; fail=1; }\ngrep -q 'PasswordAuthentication no' fixed/sshd_config || { echo 'FAIL F6'; fail=1; }\ngrep -q 'policy drop' fixed/nftables.conf || { echo 'FAIL F7'; fail=1; }\nif [[ $fail -eq 0 ]]; then echo PASS; else echo FAIL; exit 1; fi\nBASH\nchmod +x audit/retest.sh\nbash audit/retest.sh | tee audit/retest.log\n"
+     },
+     "remediation": "Prolonge le travail : intègre le re-test en CI, planifie un audit trimestriel, et transforme chaque finding en test de non-régression. C'est ainsi qu'une organisation progresse au lieu de répéter les mêmes erreurs."
+    }
+   ]
+  }
+ ]
 }

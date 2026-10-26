@@ -4,7 +4,7 @@
  "tagline": "Une vraie application : lire, attaquer, corriger, tester",
  "description": "Six missions intensives sur FactuAPI, une application de facturation : cartographier la surface, corriger un IDOR, désamorcer une injection de commandes, blinder les téléversements, durcir les en-têtes et installer une passerelle de sécurité en CI. Chaque mission fournit le code, une suite de tests qui échoue et la preuve que la correction tient.",
  "icon": "🧩",
- "accent": "#22d3ee",
+ "accent": "#ffb454",
  "modules": [
   {
    "id": "m16",

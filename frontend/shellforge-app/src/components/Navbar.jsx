@@ -19,6 +19,10 @@ const Navbar = () => (
       <a href="/docs" target="_blank" rel="noreferrer" className="nav-link nav-link-muted">
         API
       </a>
+      <span className="topbar-status">
+        <span className="status-led" aria-hidden="true" />
+        lab online
+      </span>
     </nav>
   </header>
 )
