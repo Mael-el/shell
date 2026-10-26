@@ -42,13 +42,38 @@ les contrôles vérifient à la fois le code, les tests (toujours présents) et 
 Les laboratoires sont **réinitialisables** : le bouton « réinitialiser l'espace » restaure
 l'état de départ (fichiers, dossiers et permissions d'origine).
 
+## CyberDev Dojo — le plan de 12 semaines
+
+SHELLFORGE ne remplace pas les plateformes externes : il les **orchestre**. La page
+`/dojo` tient le plan d'entraînement, avec 6 niveaux, 24 tâches vérifiables et 1 610 XP :
+
+| Niveaux | Semaines | Contenu |
+|---|---|---|
+| 1 · Fondations | 1–2 | Bandit, 15 exercices Bash, 10 exercices Python, IP/DNS/HTTP/TCP |
+| 2 · Programmation | 3–4 | 3 scripts utiles, SQL Murder Mystery, Git, outil CLI |
+| 3 · Cybersécurité | 5–6 | parcours TryHackMe, 10 challenges picoCTF, Wireshark/Nmap, 2 rapports |
+| 4 · Web | 7–8 | petite API, Juice Shop local, 5 labs PortSwigger, corrections |
+| 5 · Blue Team | 9–10 | journaux Linux, 3 enquêtes CyberDefenders, analyseur Python, Docker |
+| 6 · Projet final | 11–12 | laboratoire perso, outil documenté, CTF débutant, portfolio GitHub |
+
+Chaque tâche est cochable : l'XP n'est attribué qu'une fois, les badges (un par niveau, plus
+mi-parcours et dojo accompli) se débloquent automatiquement, et un catalogue de
+**38 ressources** (laboratoires, programmation, auto-hébergement, jeux) est accessible depuis
+la même page. Un bandeau sur l'accueil rappelle l'avancement.
+
+La page rappelle aussi la méthode de travail en cinq temps (comprendre, chercher, consulter,
+terminer, refaire sans aide) : l'IA sert de mentor, pas de solution immédiate. Aucune
+plateforme externe n'est automatisée — c'est l'apprenant qui coche, l'app calcule.
+
 ## Architecture
 
 ```
 backend/
   main.py                 API FastAPI (sessions, progression, laboratoires, vérification)
   curriculum.py           chargement + validation + sérialisation du contenu
+  roadmap.py              plan d'entraînement 12 semaines (6 niveaux, 24 tâches)
   curriculum/level-*.json contenu pédagogique (7 fichiers, 36 missions)
+  curriculum/roadmap-12-semaines.json  plan du dojo + catalogue de 38 ressources
 frontend/shellforge-app/  React 19 + Vite (parcours, mission, console, progression)
   src/index.css           jetons de design (palette terminal, typographie mono)
   src/App.css             composants : panneaux, console, vérification, badges
@@ -82,6 +107,9 @@ frontend/shellforge-app/tests/ui-smoke.mjs  fumée UI (jsdom, 5 écrans, contre 
 | GET | `/api/sessions/{id}/summary` | XP, niveau, progression par niveau/module |
 | GET | `/api/sessions/{id}/progress`, `/stats` | progression détaillée, statistiques |
 | GET/POST | `/api/labs/files`, `/api/labs/run`, `/api/labs/reset` | espace de travail et console |
+| GET | `/api/roadmap?session_id=` | plan 12 semaines, avancement, badges |
+| POST | `/api/roadmap/progress` | coche/décoche une tâche du dojo (XP une seule fois) |
+| GET | `/api/resources` | catalogue de ressources externes |
 | GET | `/api/health` | sonde de disponibilité |
 
 Documentation interactive : `http://localhost:8000/docs`.
@@ -120,7 +148,7 @@ prévisualisation. Pour appeler un backend distant, définir `VITE_API_URL`.
 
 ```bash
 source .venv/bin/activate
-pytest -q                                    # API + laboratoire (9 tests)
+pytest -q                                    # API + laboratoire + dojo (12 tests)
 python3 scripts/selfcheck_curriculum.py      # les 36 missions, solutions comprises
 cd frontend/shellforge-app
 npm run lint                                 # oxlint

@@ -1773,6 +1773,535 @@ li.done .mission-index,
   }
 }
 
+.dojo-teaser {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.4rem;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent-2);
+  border-radius: 3px;
+  background: rgba(53, 224, 255, 0.04);
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.dojo-teaser:hover {
+  border-color: var(--border-strong);
+  background: rgba(53, 224, 255, 0.07);
+}
+
+.dojo-teaser-label {
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.dojo-teaser-bar {
+  flex: 1;
+  min-width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(134, 169, 154, 0.14);
+  overflow: hidden;
+}
+
+.dojo-teaser-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 10px -2px rgba(61, 255, 162, 0.8);
+}
+
+.dojo-teaser-count {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.dojo-teaser-cta {
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ */
+/* Dojo : plan d'entraînement 12 semaines                              */
+/* ------------------------------------------------------------------ */
+
+.dojo-page .page-head {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dojo-subtitle {
+  max-width: 68ch;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.dojo-score {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(61, 255, 162, 0.04);
+}
+
+.dojo-score div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dojo-score strong {
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+.dojo-score span {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.dojo-progress {
+  margin: 1rem 0 2rem;
+}
+
+.dojo-progress p {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.dojo-section-title {
+  margin-bottom: 0.9rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+.dojo-section-title::before {
+  content: "// ";
+  color: var(--accent);
+}
+
+.dojo-trio {
+  margin-bottom: 2.2rem;
+}
+
+.trio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+
+.trio-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: linear-gradient(165deg, rgba(61, 255, 162, 0.06), rgba(4, 9, 7, 0.85));
+  transition: border-color 0.16s, transform 0.16s, background 0.16s;
+}
+
+.trio-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  background: linear-gradient(165deg, rgba(61, 255, 162, 0.1), rgba(4, 9, 7, 0.9));
+}
+
+.trio-card strong {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.trio-card > span:not(.tag):not(.trio-link) {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.trio-card .tag {
+  align-self: flex-start;
+  color: var(--accent);
+  border-color: var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.trio-link {
+  margin-top: auto;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dojo-levels {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2.2rem;
+}
+
+.dojo-level {
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.dojo-level-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.dojo-level-head h2 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dojo-level-head p {
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.dojo-level-index {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.dojo-level-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.dojo-level-meta strong {
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+
+.dojo-level-meta span {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.9rem 0 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-left: 2px solid rgba(134, 169, 154, 0.18);
+  border-radius: 3px;
+  background: rgba(4, 9, 7, 0.55);
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.task-row:hover {
+  border-color: var(--border-strong);
+}
+
+.task-row.done {
+  border-left-color: var(--accent);
+  background: rgba(61, 255, 162, 0.05);
+}
+
+.task-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  margin-top: 0.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: color 0.16s, border-color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+
+.task-check:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 16px -6px rgba(61, 255, 162, 0.9);
+}
+
+.task-check:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.task-row.done .task-check {
+  border-color: rgba(61, 255, 162, 0.6);
+  background: rgba(61, 255, 162, 0.14);
+  color: var(--accent);
+}
+
+.task-body {
+  min-width: 0;
+}
+
+.task-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.task-title strong {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.task-row.done .task-title strong {
+  color: var(--accent);
+}
+
+.task-xp {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.task-body p {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.task-resource {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--accent-2);
+  border-bottom: 1px dotted currentColor;
+}
+
+.task-resource:hover {
+  color: var(--accent);
+}
+
+.dojo-badges,
+.dojo-method,
+.dojo-resources {
+  margin-bottom: 2.2rem;
+}
+
+.badge-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.55rem;
+}
+
+.badge-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: rgba(4, 9, 7, 0.6);
+  color: var(--dim);
+}
+
+.badge-tile.earned {
+  border-style: solid;
+  border-color: rgba(61, 255, 162, 0.4);
+  background: rgba(61, 255, 162, 0.07);
+  color: var(--text);
+}
+
+.badge-icon {
+  font-size: 0.95rem;
+  color: var(--dim);
+}
+
+.badge-tile.earned .badge-icon {
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(61, 255, 162, 0.7);
+}
+
+.badge-tile strong {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.badge-tile small {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+.method-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.9rem;
+  display: grid;
+  gap: 0.3rem;
+  counter-reset: step;
+}
+
+.method-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+  counter-increment: step;
+}
+
+.method-steps li::before {
+  content: "0" counter(step);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+
+.method-time {
+  min-width: 58px;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dojo-principle {
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--border-strong);
+  font-style: italic;
+}
+
+.dojo-safety {
+  margin-bottom: 1rem;
+  font-size: 0.76rem;
+}
+
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.8rem;
+}
+
+.resource-card {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--panel);
+}
+
+.resource-card h3 {
+  margin-bottom: 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--dim);
+}
+
+.resource-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.resource-card a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dotted rgba(61, 255, 162, 0.1);
+  font-size: 0.76rem;
+  color: var(--text);
+}
+
+.resource-card a:hover {
+  color: var(--accent);
+}
+
+.resource-card small {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: var(--dim);
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .dojo-page .page-head {
+    flex-direction: column;
+  }
+
+  .dojo-score {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  .dojo-level-head {
+    flex-wrap: wrap;
+  }
+
+  .dojo-level-meta {
+    align-items: flex-start;
+    margin-left: 0;
+  }
+}
+
 .level-actions {
   display: flex;
   gap: 0.5rem;

@@ -6,6 +6,7 @@ import LevelDetail from './components/LevelDetail'
 import ModuleDetail from './components/ModuleDetail'
 import MissionDetail from './components/MissionDetail'
 import Progression from './components/Progression'
+import Dojo from './components/Dojo'
 
 const NotFound = () => (
   <main className="page">
@@ -26,6 +27,7 @@ const App = () => (
       <Route path="/module/:moduleId" element={<ModuleDetail />} />
       <Route path="/mission/:missionId" element={<MissionDetail />} />
       <Route path="/progression" element={<Progression />} />
+      <Route path="/dojo" element={<Dojo />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </>

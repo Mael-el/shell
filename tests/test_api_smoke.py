@@ -195,3 +195,67 @@ def test_session_lookup_returns_progress_or_404(tmp_path):
     missing = client.get("/api/sessions/session-inexistante")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "Session introuvable"
+
+
+def test_dojo_roadmap_exposes_the_twelve_week_plan(tmp_path):
+    client = _prepare_env(tmp_path)
+
+    payload = client.get("/api/roadmap").json()
+    assert len(payload["levels"]) == 6
+    assert payload["total_tasks"] == 24
+    assert payload["weeks"] == 12
+    assert payload["xp_total"] == 1610
+    assert payload["completed_tasks"] == 0
+    assert all(len(level["tasks"]) == 4 for level in payload["levels"])
+    assert all(task["resource"]["url"].startswith("https://") for task in payload["levels"][0]["tasks"])
+    assert payload["resources"]["recommended"][0]["name"] == "OverTheWire Bandit"
+    assert len(payload["resources"]["categories"]) == 4
+
+
+def test_dojo_progress_is_tracked_once_per_task(tmp_path):
+    client = _prepare_env(tmp_path)
+    session_id = _session(client)
+
+    first = client.post(
+        "/api/roadmap/progress", json={"session_id": session_id, "task_id": "d1-t1"}
+    )
+    assert first.status_code == 200
+    payload = first.json()
+    assert payload["done"] is True
+    assert payload["score_awarded"] == 60
+    assert payload["completed_tasks"] == 1
+    assert payload["xp_earned"] == 60
+    assert payload["levels"][0]["completed_tasks"] == 1
+
+    again = client.post(
+        "/api/roadmap/progress", json={"session_id": session_id, "task_id": "d1-t1"}
+    ).json()
+    assert again["completed_tasks"] == 1
+    assert again["xp_earned"] == 60, "l'XP ne doit pas être attribué deux fois"
+
+    undone = client.post(
+        "/api/roadmap/progress",
+        json={"session_id": session_id, "task_id": "d1-t1", "done": False},
+    ).json()
+    assert undone["done"] is False
+    assert undone["completed_tasks"] == 0
+    assert undone["xp_earned"] == 0
+
+    stored = client.get("/api/roadmap", params={"session_id": session_id}).json()
+    assert stored["completed_tasks"] == 0
+
+
+def test_dojo_rejects_unknown_task_and_session(tmp_path):
+    client = _prepare_env(tmp_path)
+    session_id = _session(client)
+
+    assert client.post(
+        "/api/roadmap/progress",
+        json={"session_id": session_id, "task_id": "d9-t9"},
+    ).status_code == 404
+    assert client.post(
+        "/api/roadmap/progress",
+        json={"session_id": "session-absente", "task_id": "d1-t1"},
+    ).status_code == 404
+    assert client.get("/api/roadmap", params={"session_id": "session-absente"}).status_code == 404
+    assert client.get("/api/resources").json()["safety"]

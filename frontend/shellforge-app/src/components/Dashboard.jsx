@@ -6,6 +6,7 @@ const Dashboard = () => {
   const [summary, setSummary] = useState(null)
   const [levels, setLevels] = useState([])
   const [nextMission, setNextMission] = useState(null)
+  const [dojo, setDojo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -14,13 +15,15 @@ const Dashboard = () => {
     const load = async () => {
       try {
         const sessionId = await ensureSession()
-        const [summaryData, levelsData] = await Promise.all([
+        const [summaryData, levelsData, dojoData] = await Promise.all([
           api(`/api/sessions/${sessionId}/summary`),
           api(withSession('/api/levels', sessionId)),
+          api(withSession('/api/roadmap', sessionId)),
         ])
         if (cancelled) return
         setSummary(summaryData)
         setLevels(levelsData.levels)
+        setDojo(dojoData)
         if (summaryData.next_mission) {
           const mission = await api(`/api/missions/${summaryData.next_mission}`)
           if (!cancelled) {
@@ -89,6 +92,19 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
+
+      {dojo && (
+        <Link to="/dojo" className="dojo-teaser">
+          <span className="dojo-teaser-label">CyberDev Dojo · 12 semaines</span>
+          <span className="dojo-teaser-bar">
+            <span style={{ width: `${dojo.percentage}%` }} />
+          </span>
+          <span className="dojo-teaser-count">
+            {dojo.completed_tasks}/{dojo.total_tasks} tâches · {dojo.xp_earned} XP
+          </span>
+          <span className="dojo-teaser-cta">continuer →</span>
+        </Link>
+      )}
 
       <section className="levels">
         {levels.map((level, index) => {

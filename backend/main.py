@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import curriculum
+import roadmap
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -155,6 +156,16 @@ def init_db() -> None:
             status TEXT DEFAULT 'not_started',
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (session_id, mission_id, section_id)
+        )""",
+    )
+    exec_sql(
+        conn,
+        """CREATE TABLE IF NOT EXISTS dojo_progress (
+            session_id TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            score INTEGER DEFAULT 0,
+            completed_at TIMESTAMP,
+            PRIMARY KEY (session_id, task_id)
         )""",
     )
     exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_mission_progress_session ON mission_progress(session_id)")
@@ -375,6 +386,28 @@ def completed_missions(session_id: str) -> set[str]:
     }
 
 
+def dojo_progress_map(session_id: str) -> dict[str, dict]:
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT task_id, score, completed_at FROM dojo_progress WHERE session_id = ?",
+            (session_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+    return {row["task_id"]: row for row in rows}
+
+
+def build_roadmap(session_id: str | None = None) -> dict:
+    """Vue du plan d'entraînement, enrichie de l'avancement de la session."""
+    rows = dojo_progress_map(session_id) if session_id else {}
+    completed = {task_id for task_id, row in rows.items() if row["completed_at"]}
+    scores = {task_id: int(row["score"] or 0) for task_id, row in rows.items()}
+    payload = roadmap.public_payload(completed, scores)
+    payload["session_id"] = session_id
+    return payload
+
+
 def calculate_level_from_xp(xp: int) -> int:
     return 1 + (max(xp, 0) // 500)
 
@@ -514,6 +547,12 @@ class LearningProgressRequest(BaseModel):
     lesson_id: str | None = None
     section_id: str | None = None
     status: str = "completed"
+
+
+class RoadmapProgressRequest(BaseModel):
+    session_id: str
+    task_id: str
+    done: bool = True
 
 
 class LabRunRequest(BaseModel):
@@ -684,6 +723,76 @@ async def update_learning_progress(payload: LearningProgressRequest):
     finally:
         conn.close()
     return build_learning_progress(payload.session_id, mission)
+
+
+# ---------------------------------------------------------------------------
+# Routes : plan d'entraînement (CyberDev Dojo)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/roadmap")
+async def get_roadmap(session_id: str | None = Query(default=None)):
+    """Plan de 12 semaines, 6 niveaux, 24 tâches, avec l'avancement de la session."""
+    if session_id:
+        require_session(session_id)
+    return build_roadmap(session_id)
+
+
+@app.post("/api/roadmap/progress")
+async def update_roadmap_progress(payload: RoadmapProgressRequest):
+    """Coche ou décoche une tâche. L'XP n'est attribué qu'une seule fois par tâche."""
+    task = roadmap.get_task(payload.task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Tâche inconnue")
+    require_session(payload.session_id)
+
+    conn = get_db()
+    try:
+        if payload.done:
+            now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            exec_sql(
+                conn,
+                """INSERT INTO dojo_progress (session_id, task_id, score, completed_at)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(session_id, task_id) DO UPDATE SET
+                     completed_at = COALESCE(dojo_progress.completed_at, excluded.completed_at)""",
+                (payload.session_id, task["id"], task["xp"], now),
+            )
+        else:
+            exec_sql(
+                conn,
+                "DELETE FROM dojo_progress WHERE session_id = ? AND task_id = ?",
+                (payload.session_id, task["id"]),
+            )
+        row = conn.execute(
+            "SELECT score, completed_at FROM dojo_progress WHERE session_id = ? AND task_id = ?",
+            (payload.session_id, task["id"]),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    tracked = bool(row and row["completed_at"])
+    payload_out = build_roadmap(payload.session_id)
+    payload_out.update(
+        {
+            "task_id": task["id"],
+            "done": tracked,
+            "score_awarded": int(row["score"] or 0) if tracked else 0,
+        }
+    )
+    return payload_out
+
+
+@app.get("/api/resources")
+async def get_resources():
+    """Catalogue de ressources externes : laboratoires, programmation, auto-hébergement, jeux."""
+    data = roadmap.load_roadmap()
+    return {
+        "recommended": data["resources"]["recommended"],
+        "categories": data["resources"]["categories"],
+        "method": data["resources"]["method"],
+        "safety": data["resources"]["safety"],
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,546 @@
+{
+ "title": "CyberDev Dojo",
+ "subtitle": "12 semaines, 6 niveaux, 24 tâches vérifiables : apprendre en pratiquant, pas en regardant.",
+ "principle": "On apprend une notion, on la teste immédiatement sur un laboratoire, on documente, puis on monte d'un cran.",
+ "levels": [
+  {
+   "id": "d1",
+   "name": "Fondations",
+   "weeks": "Semaines 1–2",
+   "accent": "#3dffa2",
+   "goal": "Le terminal devient un réflexe : se déplacer, filtrer, se connecter, comprendre le réseau.",
+   "tasks": [
+    {
+     "id": "d1-t1",
+     "label": "Bandit : les 10 premiers niveaux",
+     "track": "linux",
+     "xp": 60,
+     "detail": "Chaque niveau cache un secret qui ouvre le suivant : fichiers, permissions, SSH, redirections.",
+     "resource": {
+      "name": "OverTheWire Bandit",
+      "url": "https://overthewire.org/wargames/bandit/"
+     }
+    },
+    {
+     "id": "d1-t2",
+     "label": "15 exercices Bash (cmdchallenge)",
+     "track": "linux",
+     "xp": 50,
+     "detail": "Une commande par défi, corrigée immédiatement : globbing, pipes, substitution.",
+     "resource": {
+      "name": "cmdchallenge",
+      "url": "https://cmdchallenge.com/"
+     }
+    },
+    {
+     "id": "d1-t3",
+     "label": "10 exercices Python sur Exercism",
+     "track": "code",
+     "xp": 70,
+     "detail": "Tests automatiques + mentorat : la boucle la plus efficace pour vraiment apprendre Python.",
+     "resource": {
+      "name": "Exercism — Python",
+      "url": "https://exercism.org/tracks/python"
+     }
+    },
+    {
+     "id": "d1-t4",
+     "label": "IP, DNS, HTTP et TCP expliqués par la pratique",
+     "track": "reseau",
+     "xp": 40,
+     "detail": "Une requête réelle décomposée : résolution DNS, poignée de main TCP, en-têtes HTTP, statuts.",
+     "resource": {
+      "name": "MDN — HTTP",
+      "url": "https://developer.mozilla.org/fr/docs/Web/HTTP"
+     }
+    }
+   ]
+  },
+  {
+   "id": "d2",
+   "name": "Programmation",
+   "weeks": "Semaines 3–4",
+   "accent": "#2be8c4",
+   "goal": "Écrire des outils courts qui servent vraiment, plutôt que suivre des tutoriels.",
+   "tasks": [
+    {
+     "id": "d2-t1",
+     "label": "Créer 3 scripts Python utiles",
+     "track": "code",
+     "xp": 70,
+     "detail": "Par exemple : tri de fichiers par type, extraction de statistiques de logs, sauvegarde vérifiée."
+    },
+    {
+     "id": "d2-t2",
+     "label": "Résoudre SQL Murder Mystery",
+     "track": "data",
+     "xp": 60,
+     "detail": "Une enquête résolue uniquement en SQL : jointures, agrégats, filtres successifs.",
+     "resource": {
+      "name": "SQL Murder Mystery",
+      "url": "https://mystery.knightlab.com/"
+     }
+    },
+    {
+     "id": "d2-t3",
+     "label": "Maîtriser Git avec Learn Git Branching",
+     "track": "code",
+     "xp": 50,
+     "detail": "Branches, rebase, cherry-pick en visualisant chaque commande sur l'arbre.",
+     "resource": {
+      "name": "Learn Git Branching",
+      "url": "https://learngitbranching.js.org/?locale=fr_FR"
+     }
+    },
+    {
+     "id": "d2-t4",
+     "label": "Construire un outil CLI propre (argparse)",
+     "track": "code",
+     "xp": 70,
+     "detail": "Sous-commandes, options, --help lisible, code de sortie correct, un test par commande."
+    }
+   ]
+  },
+  {
+   "id": "d3",
+   "name": "Cybersécurité",
+   "weeks": "Semaines 5–6",
+   "accent": "#35d8ff",
+   "goal": "Premiers vrais laboratoires : énumérer, capturer, comprendre, documenter.",
+   "tasks": [
+    {
+     "id": "d3-t1",
+     "label": "Suivre un parcours débutant TryHackMe",
+     "track": "cyber",
+     "xp": 80,
+     "detail": "Machines guidées avec questions intermédiaires : reconnaissance, services, premiers accès.",
+     "resource": {
+      "name": "TryHackMe",
+      "url": "https://tryhackme.com/"
+     }
+    },
+    {
+     "id": "d3-t2",
+     "label": "Résoudre 10 challenges picoCTF",
+     "track": "cyber",
+     "xp": 80,
+     "detail": "Crypto, forensic, web, reverse : de quoi toucher tous les domaines sans se spécialiser trop tôt.",
+     "resource": {
+      "name": "picoCTF",
+      "url": "https://picoctf.org/"
+     }
+    },
+    {
+     "id": "d3-t3",
+     "label": "Wireshark et Nmap en laboratoire local",
+     "track": "reseau",
+     "xp": 60,
+     "detail": "Capturer un trafic de test, lire une trame, scanner une machine de son propre réseau isolé."
+    },
+    {
+     "id": "d3-t4",
+     "label": "Rédiger 2 rapports techniques",
+     "track": "cyber",
+     "xp": 60,
+     "detail": "Contexte, preuve, impact, remédiation : la compétence qui distingue un pratiquant d'un lecteur."
+    }
+   ]
+  },
+  {
+   "id": "d4",
+   "name": "Web et sécurité applicative",
+   "weeks": "Semaines 7–8",
+   "accent": "#d9ff5c",
+   "goal": "Comprendre une application, l'attaquer sur un environnement autorisé, puis la corriger.",
+   "tasks": [
+    {
+     "id": "d4-t1",
+     "label": "Développer une petite API",
+     "track": "code",
+     "xp": 70,
+     "detail": "Trois routes, une base, une authentification : on ne défend bien que ce qu'on a construit."
+    },
+    {
+     "id": "d4-t2",
+     "label": "Installer Juice Shop localement",
+     "track": "web",
+     "xp": 60,
+     "detail": "En local, jamais exposé : le terrain d'entraînement web le plus complet en open source.",
+     "resource": {
+      "name": "OWASP Juice Shop",
+      "url": "https://owasp.org/www-project-juice-shop/"
+     }
+    },
+    {
+     "id": "d4-t3",
+     "label": "5 laboratoires PortSwigger",
+     "track": "web",
+     "xp": 90,
+     "detail": "SQLi, XSS, contrôle d'accès, CSRF, SSRF : un labo par famille de faille, avec explication.",
+     "resource": {
+      "name": "PortSwigger Academy",
+      "url": "https://portswigger.net/web-security"
+     }
+    },
+    {
+     "id": "d4-t4",
+     "label": "Corriger des vulnérabilités dans son propre code",
+     "track": "web",
+     "xp": 70,
+     "detail": "Reprendre l'API du niveau 4 et fermer ce que les labs ont appris à exploiter, tests à l'appui."
+    }
+   ]
+  },
+  {
+   "id": "d5",
+   "name": "Blue Team et système",
+   "weeks": "Semaines 9–10",
+   "accent": "#b08cff",
+   "goal": "Passer de l'attaque à la détection : journaux, enquête, automatisation.",
+   "tasks": [
+    {
+     "id": "d5-t1",
+     "label": "Analyser des journaux Linux (auth.log, journalctl)",
+     "track": "blue",
+     "xp": 60,
+     "detail": "Reconstituer une tentative d'intrusion à partir des seules traces : qui, quand, comment."
+    },
+    {
+     "id": "d5-t2",
+     "label": "3 enquêtes CyberDefenders",
+     "track": "blue",
+     "xp": 80,
+     "detail": "Des investigations guidées sur captures réseau et artefacts système.",
+     "resource": {
+      "name": "CyberDefenders",
+      "url": "https://cyberdefenders.org/"
+     }
+    },
+    {
+     "id": "d5-t3",
+     "label": "Écrire un analyseur de logs Python",
+     "track": "blue",
+     "xp": 70,
+     "detail": "Détecter des motifs (échecs répétés, IP suspectes) et produire un rapport lisible."
+    },
+    {
+     "id": "d5-t4",
+     "label": "Docker et surveillance système",
+     "track": "systeme",
+     "xp": 60,
+     "detail": "Conteneurs isolés, limites de ressources et métriques : la base d'un laboratoire jetable.",
+     "resource": {
+      "name": "Play with Docker",
+      "url": "https://labs.play-with-docker.com/"
+     }
+    }
+   ]
+  },
+  {
+   "id": "d6",
+   "name": "Projet final",
+   "weeks": "Semaines 11–12",
+   "accent": "#ffb454",
+   "goal": "Transformer les exercices en preuves publiques : laboratoire, outil documenté, portfolio.",
+   "tasks": [
+    {
+     "id": "d6-t1",
+     "label": "Créer un mini laboratoire cyber personnel",
+     "track": "projet",
+     "xp": 90,
+     "detail": "Applications vulnérables isolées (réseau local uniquement), réinitialisables, scriptées.",
+     "resource": {
+      "name": "Vulhub",
+      "url": "https://github.com/vulhub/vulhub"
+     }
+    },
+    {
+     "id": "d6-t2",
+     "label": "Développer un outil Python documenté",
+     "track": "projet",
+     "xp": 80,
+     "detail": "README, exemples, tests, licence : un dépôt qu'un inconnu peut lancer en cinq minutes."
+    },
+    {
+     "id": "d6-t3",
+     "label": "Résoudre un CTF débutant",
+     "track": "cyber",
+     "xp": 70,
+     "detail": "Un événement complet, en temps limité : la pression révèle ce qui n'est pas encore acquis.",
+     "resource": {
+      "name": "Root-Me",
+      "url": "https://www.root-me.org/"
+     }
+    },
+    {
+     "id": "d6-t4",
+     "label": "Publier un portfolio technique sur GitHub",
+     "track": "projet",
+     "xp": 60,
+     "detail": "Trois dépôts, trois récits : ce que tu as cherché, ce que tu as trouvé, ce que tu as corrigé."
+    }
+   ]
+  }
+ ],
+ "resources": {
+  "recommended": [
+   {
+    "name": "OverTheWire Bandit",
+    "url": "https://overthewire.org/wargames/bandit/",
+    "domain": "Linux & Bash",
+    "why": "Commencer ici : chaque niveau est un secret à trouver, pas une vidéo à regarder."
+   },
+   {
+    "name": "Exercism — Python",
+    "url": "https://exercism.org/tracks/python",
+    "domain": "Programmation",
+    "why": "Tests automatiques et mentorat : on écrit du code, on le fait corriger."
+   },
+   {
+    "name": "TryHackMe",
+    "url": "https://tryhackme.com/",
+    "domain": "Cybersécurité",
+    "why": "Parcours guidés pour passer des fondamentaux aux premières machines."
+   }
+  ],
+  "categories": [
+   {
+    "id": "labs",
+    "name": "Laboratoires cyber",
+    "items": [
+     {
+      "name": "TryHackMe",
+      "url": "https://tryhackme.com/",
+      "note": "guidé, débutant → avancé"
+     },
+     {
+      "name": "Hack The Box Academy",
+      "url": "https://academy.hackthebox.com/",
+      "note": "pentest, Active Directory"
+     },
+     {
+      "name": "PortSwigger Web Security Academy",
+      "url": "https://portswigger.net/web-security",
+      "note": "failles web, gratuit"
+     },
+     {
+      "name": "picoCTF",
+      "url": "https://picoctf.org/",
+      "note": "ludique, tous domaines"
+     },
+     {
+      "name": "Root-Me",
+      "url": "https://www.root-me.org/",
+      "note": "en français"
+     },
+     {
+      "name": "OverTheWire",
+      "url": "https://overthewire.org/wargames/bandit/",
+      "note": "wargames Linux"
+     },
+     {
+      "name": "LetsDefend",
+      "url": "https://letsdefend.io/",
+      "note": "blue team / SOC"
+     },
+     {
+      "name": "CyberDefenders",
+      "url": "https://cyberdefenders.org/",
+      "note": "forensic, enquêtes"
+     },
+     {
+      "name": "crackmes.one",
+      "url": "https://crackmes.one/",
+      "note": "reverse engineering"
+     },
+     {
+      "name": "pwn.college",
+      "url": "https://pwn.college/",
+      "note": "dojo système, ceintures"
+     },
+     {
+      "name": "CryptoHack",
+      "url": "https://cryptohack.org/",
+      "note": "cryptographie"
+     },
+     {
+      "name": "OWASP MASTG",
+      "url": "https://mas.owasp.org/MASTG/",
+      "note": "sécurité Android"
+     },
+     {
+      "name": "CloudGoat",
+      "url": "https://github.com/RhinoSecurityLabs/cloudgoat",
+      "note": "sécurité cloud (AWS)"
+     },
+     {
+      "name": "Labtainers",
+      "url": "https://nps.edu/web/c3o/labtainers",
+      "note": "réseau, laboratoires"
+     }
+    ]
+   },
+   {
+    "id": "code",
+    "name": "Programmation en pratiquant",
+    "items": [
+     {
+      "name": "Exercism",
+      "url": "https://exercism.org/tracks/python",
+      "note": "Python, mentorat"
+     },
+     {
+      "name": "CodinGame",
+      "url": "https://www.codingame.com/",
+      "note": "algorithmes, jeux"
+     },
+     {
+      "name": "Codewars",
+      "url": "https://www.codewars.com/",
+      "note": "kata, rangs"
+     },
+     {
+      "name": "SQL Murder Mystery",
+      "url": "https://mystery.knightlab.com/",
+      "note": "enquête SQL"
+     },
+     {
+      "name": "Flexbox Froggy",
+      "url": "https://flexboxfroggy.com/#fr",
+      "note": "CSS en jouant"
+     },
+     {
+      "name": "The Odin Project",
+      "url": "https://www.theodinproject.com/",
+      "note": "vrais projets web"
+     },
+     {
+      "name": "cmdchallenge",
+      "url": "https://cmdchallenge.com/",
+      "note": "une commande par défi"
+     },
+     {
+      "name": "Learn Git Branching",
+      "url": "https://learngitbranching.js.org/?locale=fr_FR",
+      "note": "Git visuel"
+     },
+     {
+      "name": "SQLBolt",
+      "url": "https://sqlbolt.com/",
+      "note": "SQL progressif"
+     },
+     {
+      "name": "RegexOne",
+      "url": "https://regexone.com/",
+      "note": "expressions régulières"
+     }
+    ]
+   },
+   {
+    "id": "selfhost",
+    "name": "À héberger soi-même (réseau isolé)",
+    "items": [
+     {
+      "name": "OWASP Juice Shop",
+      "url": "https://owasp.org/www-project-juice-shop/",
+      "note": "web + API"
+     },
+     {
+      "name": "DVWA",
+      "url": "https://github.com/digininja/DVWA",
+      "note": "pentest web progressif"
+     },
+     {
+      "name": "WebGoat",
+      "url": "https://github.com/WebGoat/WebGoat",
+      "note": "apprentissage guidé"
+     },
+     {
+      "name": "Vulhub",
+      "url": "https://github.com/vulhub/vulhub",
+      "note": "environnements Docker vulnérables"
+     },
+     {
+      "name": "DetectionLab",
+      "url": "https://github.com/clong/DetectionLab",
+      "note": "détection"
+     },
+     {
+      "name": "Build Your Own X",
+      "url": "https://github.com/codecrafters-io/build-your-own-x",
+      "note": "recréer Git, Redis, HTTP"
+     },
+     {
+      "name": "The Algorithms",
+      "url": "https://github.com/TheAlgorithms/Python",
+      "note": "lire du code algorithmique"
+     },
+     {
+      "name": "Codecrafters",
+      "url": "https://codecrafters.io/",
+      "note": "construire un serveur, un shell"
+     },
+     {
+      "name": "Play with Docker",
+      "url": "https://labs.play-with-docker.com/",
+      "note": "Docker sans installer"
+     },
+     {
+      "name": "SadServers",
+      "url": "https://sadservers.com/",
+      "note": "dépannage DevOps"
+     }
+    ]
+   },
+   {
+    "id": "games",
+    "name": "Jeux (compléments, parfois payants)",
+    "items": [
+     {
+      "name": "Hacknet",
+      "url": "https://hacknet-os.com/",
+      "note": "simulation narrative"
+     },
+     {
+      "name": "Grey Hack",
+      "url": "https://greyhackgame.com/",
+      "note": "terminal, réseaux, scripting"
+     },
+     {
+      "name": "Turing Complete",
+      "url": "https://store.steampowered.com/app/1444480/Turing_Complete/",
+      "note": "des portes logiques au CPU"
+     },
+     {
+      "name": "SHENZHEN I/O",
+      "url": "https://www.zachtronics.com/shenzhen-io/",
+      "note": "programmer des circuits"
+     }
+    ]
+   }
+  ],
+  "method": [
+   {
+    "step": "5 min",
+    "label": "Comprendre l'objectif de l'exercice"
+   },
+   {
+    "step": "20 min",
+    "label": "Chercher seul, expérimenter, se tromper"
+   },
+   {
+    "step": "10 min",
+    "label": "Consulter la documentation ou un indice"
+   },
+   {
+    "step": "15 min",
+    "label": "Terminer et analyser ses erreurs"
+   },
+   {
+    "step": "10 min",
+    "label": "Refaire sans aide et documenter la solution"
+   }
+  ],
+  "safety": "N'expose jamais un laboratoire vulnérable à Internet : réseau local isolé ou plateforme autorisée, autorisation écrite hors de chez soi."
+ }
+}

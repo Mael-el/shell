@@ -152,6 +152,16 @@ async function main() {
       { click: 'Fichiers' },
       'Espace de travail',
     ])
+    await visit('/dojo', [
+      'CyberDev Dojo',
+      '12 semaines',
+      'Le trio pour commencer maintenant',
+      'OverTheWire Bandit',
+      { click: '○' },
+      '1/24',
+      'Badges',
+      'Ressources',
+    ])
     await visit('/progression', ['Ta progression', 'Activité récente'])
 
     console.error = originalError
