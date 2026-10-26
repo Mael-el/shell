@@ -98,6 +98,7 @@ async function main() {
     }
 
     const checks = []
+    const visited = []
     let route = '/'
 
     const clickButton = (label) => {
@@ -115,6 +116,7 @@ async function main() {
 
     const visit = async (path, steps) => {
       route = path
+      visited.push(path)
       mounting.render(
         React.createElement(
           MemoryRouter,
@@ -139,6 +141,7 @@ async function main() {
     checks.push(`session périmée (${staleId}) → nouvelle session`)
     await visit('/niveau/1', ['Niveau 1', 'missions'])
     await visit('/module/m01', ['Cartographier un serveur inconnu'])
+    await visit('/niveau/7', ['Applications', 'Cartographier la surface'])
     await visit('/mission/m01-01', [
       'Le cours',
       'Marquer comme lu',
@@ -159,7 +162,7 @@ async function main() {
       throw new Error(`Erreurs console pendant le rendu :\n${errors.join('\n')}`)
     }
 
-    console.log(`UI OK — ${checks.length} assertions sur 5 écrans`)
+    console.log(`UI OK — ${checks.length} assertions sur ${visited.length} écrans`)
     for (const check of checks) console.log(`  ✓ ${check}`)
     mounting.unmount()
   } finally {

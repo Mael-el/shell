@@ -6,10 +6,10 @@ automatiquement** par le serveur. On apprend une notion, on l'applique immédiat
 prouve qu'elle est maîtrisée, puis on monte d'un cran.
 
 ```
-Fondations → Fiabilité → Administration Linux → Reconnaissance → Pentest → Ingénierie
+Fondations → Fiabilité → Administration Linux → Reconnaissance → Pentest → Ingénierie → Applications
 ```
 
-**30 missions · 15 modules · 6 niveaux · 9 580 XP**
+**36 missions · 18 modules · 7 niveaux · 12 130 XP**
 
 | Niveau | Contenu | Missions |
 |---|---|---|
@@ -19,6 +19,7 @@ Fondations → Fiabilité → Administration Linux → Reconnaissance → Pentes
 | 4 · Reconnaissance | OSINT DNS, fuites applicatives, corrélation de scan, énumération de services | 4 |
 | 5 · Pentest | injection SQL, XSS/CSRF, secrets et JWT, élévation de privilèges, post-exploitation, rapport + re-test | 6 |
 | 6 · Ingénierie de production | IaC + CI sécurité, SLO/observabilité/postmortem, audit final de bout en bout | 4 |
+| 7 · Applications | sur une même application (FactuAPI) : cartographie de la surface, IDOR, injection de commandes, téléversements, en-têtes/CSP, passerelle de sécurité en CI | 6 |
 
 ## Comment fonctionne une mission
 
@@ -33,6 +34,11 @@ Fondations → Fiabilité → Administration Linux → Reconnaissance → Pentes
 4. **Déblocage** — un niveau s'ouvre quand 70 % du précédent est validé. La mission suivante
    est proposée automatiquement après chaque succès.
 
+Le niveau 7 pousse la pratique plus loin : chaque mission livre un morceau d'application
+réel (Python), une **suite de tests qui échoue**, et demande de corriger le code jusqu'au
+vert — puis de documenter l'impact. `python3 run_tests.py` joue la suite comme la CI, et
+les contrôles vérifient à la fois le code, les tests (toujours présents) et le rapport.
+
 Les laboratoires sont **réinitialisables** : le bouton « réinitialiser l'espace » restaure
 l'état de départ (fichiers, dossiers et permissions d'origine).
 
@@ -42,13 +48,13 @@ l'état de départ (fichiers, dossiers et permissions d'origine).
 backend/
   main.py                 API FastAPI (sessions, progression, laboratoires, vérification)
   curriculum.py           chargement + validation + sérialisation du contenu
-  curriculum/level-*.json contenu pédagogique (6 fichiers, 30 missions)
+  curriculum/level-*.json contenu pédagogique (7 fichiers, 36 missions)
 frontend/shellforge-app/  React 19 + Vite (parcours, mission, console, progression)
 scripts/selfcheck_curriculum.py  auto-contrôle : joue chaque solution et vérifie les preuves
 scripts/dev.sh            démarre backend + frontend en une commande
 tests/test_api_smoke.py   tests de l'API et du moteur de laboratoire
 frontend/shellforge-app/tests/ui-smoke.mjs  fumée UI (jsdom, 5 écrans, contre l'API réelle)
-.github/workflows/ci.yml  CI : pytest, selfcheck 30/30, lint, build, fumée UI
+.github/workflows/ci.yml  CI : pytest, selfcheck 36/36, lint, build, fumée UI
 ```
 
 ### Ajouter une mission
@@ -113,7 +119,7 @@ prévisualisation. Pour appeler un backend distant, définir `VITE_API_URL`.
 ```bash
 source .venv/bin/activate
 pytest -q                                    # API + laboratoire (9 tests)
-python3 scripts/selfcheck_curriculum.py      # les 30 missions, solutions comprises
+python3 scripts/selfcheck_curriculum.py      # les 36 missions, solutions comprises
 cd frontend/shellforge-app
 npm run lint                                 # oxlint
 npm run build                                # build de production
@@ -121,8 +127,8 @@ npm run test:ui                              # fumée UI (API requise sur :8000)
 ```
 
 `npm run test:ui` monte la vraie application React dans jsdom via le serveur Vite, visite
-`/`, `/niveau/1`, `/module/m01`, `/mission/m01-01` (cours, laboratoire, fichiers) et
-`/progression`, et échoue sur toute erreur console. Un scénario dédié vérifie aussi qu'une
+`/`, `/niveau/1`, `/niveau/7`, `/module/m01`, `/mission/m01-01` (cours, laboratoire,
+fichiers) et `/progression`, et échoue sur toute erreur console. Un scénario dédié vérifie aussi qu'une
 session devenue invalide (base réinitialisée) est remplacée sans écran d'erreur.
 La CI GitHub Actions (`.github/workflows/ci.yml`) rejoue ces vérifications à chaque push
 sur `main` et sur chaque pull request.

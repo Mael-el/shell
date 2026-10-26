@@ -29,9 +29,9 @@ def test_curriculum_is_exposed(tmp_path):
     levels = client.get("/api/levels").json()["levels"]
     modules = client.get("/api/modules").json()["modules"]
 
-    assert len(levels) == 6
-    assert sum(item["total_missions"] for item in levels) == 30
-    assert len(modules) == 15
+    assert len(levels) == 7
+    assert sum(item["total_missions"] for item in levels) == 36
+    assert len(modules) == 18
     assert all(module["missions"] for module in modules)
     assert levels[0]["unlocked"] is True
     assert levels[1]["unlocked"] is False

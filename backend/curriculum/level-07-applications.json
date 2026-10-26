@@ -1,0 +1,832 @@
+{
+ "level": 7,
+ "name": "Applications",
+ "tagline": "Une vraie application : lire, attaquer, corriger, tester",
+ "description": "Six missions intensives sur FactuAPI, une application de facturation : cartographier la surface, corriger un IDOR, désamorcer une injection de commandes, blinder les téléversements, durcir les en-têtes et installer une passerelle de sécurité en CI. Chaque mission fournit le code, une suite de tests qui échoue et la preuve que la correction tient.",
+ "icon": "🧩",
+ "accent": "#22d3ee",
+ "modules": [
+  {
+   "id": "m16",
+   "title": "Auditer une application",
+   "description": "Inventorier ce qui est exposé, puis vérifier qui a le droit de lire quoi.",
+   "category": "applications",
+   "difficulty": "hard",
+   "missions": [
+    {
+     "id": "m16-01",
+     "title": "Cartographier la surface d'une API",
+     "brief": "Six routes, deux publiques : avant de tester une application, il faut savoir ce qu'elle expose. Écris l'outil qui produit cette cartographie depuis le code, puis qualifie les risques.",
+     "difficulty": "hard",
+     "points": 350,
+     "estimated_minutes": 45,
+     "tags": [
+      "inventaire",
+      "surface d'attaque",
+      "Python",
+      "revue de code"
+     ],
+     "objectives": [
+      "Inventorier les routes d'une application et leur exposition",
+      "Écrire un outil d'inventaire reproductible plutôt qu'une liste recopiée à la main",
+      "Prioriser les risques route par route (IDOR, force brute, actions destructrices)"
+     ],
+     "lesson": {
+      "summary": "La surface d'attaque, c'est l'ensemble des routes qu'un attaquant peut joindre. Elle se lit dans le code, pas en cliquant : la table de routage est la source de vérité. Un inventaire reproductible sert deux fois — il guide les tests, puis il devient le document qui détecte les routes ajoutées sans contrôle d'accès.",
+      "sections": [
+       {
+        "id": "inventaire",
+        "name": "Pourquoi commencer par l'inventaire",
+        "content": "Tester au hasard fait perdre du temps et rate les routes oubliées : debug, administration, exports. L'inventaire liste méthode, chemin, handler et exigence d'authentification. On obtient une carte que l'on relit, que l'on compare d'une version à l'autre et que l'on confronte au code."
+       },
+       {
+        "id": "source",
+        "name": "Lire la table de routage, pas les pages",
+        "content": "FactuAPI déclare ses routes dans la liste ROUTES de app/api.py : chaque entrée porte la méthode, le chemin, le handler et l'indicateur public. Un outil qui importe cette table reste juste quand une route change, contrairement à une liste recopiée dans un document."
+       },
+       {
+        "id": "risque",
+        "name": "De l'inventaire au risque",
+        "content": "Chaque route se qualifie par quatre questions : qui peut l'appeler, quel objet peut-il choisir, à quelle fréquence, que laisse-t-elle comme trace ? GET /invoices/{id} laisse le client choisir l'objet (IDOR), POST /login n'a aucune limitation de tentatives, DELETE n'écrit pas d'audit. Ce sont les trois premières entrées d'un plan de test."
+       }
+      ],
+      "references": [
+       {
+        "command": "python3 tools/surface.py",
+        "role": "Exécuter l'outil depuis la racine du projet",
+        "example": "python3 tools/surface.py"
+       },
+       {
+        "command": "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))",
+        "role": "Rendre le paquet app importable depuis un sous-dossier",
+        "example": "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))"
+       },
+       {
+        "command": "python3 -c \"from app.api import ROUTES; print(len(ROUTES))\"",
+        "role": "Vérifier la source de vérité avant d'écrire l'outil",
+        "example": "python3 -c \"from app.api import ROUTES; print(len(ROUTES))\""
+       }
+      ],
+      "pitfalls": [
+       "Deviner les routes en explorant l'interface : l'inventaire doit sortir du code.",
+       "Oublier les routes publiques : ce sont elles qui portent le brute force et l'énumération.",
+       "Écrire un outil qui casse quand on le lance depuis un autre dossier (imports non résolus)."
+      ]
+     },
+     "remediation": "Côté défense, la même table alimente un inventaire d'API versionné, comparé à chaque pipeline : toute route ajoutée sans authentification, ou sans test d'autorisation, casse la CI.",
+     "lab": {
+      "task": "Écris tools/surface.py : depuis la racine du projet, `python3 tools/surface.py` affiche une ligne par route (`MÉTHODE CHEMIN auth=oui|non handler`), puis un récapitulatif `surface: 6 routes, 2 publiques, 4 protegees`. Rédige ensuite surface.md : le tableau des routes et les trois risques prioritaires (dont l'IDOR de GET /invoices/{id} et l'absence de limitation sur POST /login).",
+      "steps": [
+       "Ouvre app/api.py et repère la liste ROUTES",
+       "Écris tools/surface.py en ajoutant la racine du projet à sys.path",
+       "Lance-le et compare le récapitulatif avec la table",
+       "Qualifie les trois risques prioritaires dans surface.md"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/store.py": "\"\"\"Dépôt en mémoire de FactuAPI (données de démonstration).\"\"\"\n\nINVOICES = {\n    101: {\"id\": 101, \"owner\": \"alice\", \"amount\": 1200.0, \"status\": \"payée\"},\n    102: {\"id\": 102, \"owner\": \"bob\", \"amount\": 340.0, \"status\": \"ouverte\"},\n    103: {\"id\": 103, \"owner\": \"alice\", \"amount\": 89.0, \"status\": \"ouverte\"},\n}\n\nUSERS = {\n    \"alice\": {\"role\": \"user\", \"token\": \"tok-alice\"},\n    \"bob\": {\"role\": \"user\", \"token\": \"tok-bob\"},\n    \"audit\": {\"role\": \"auditor\", \"token\": \"tok-audit\"},\n}\n\n\ndef user_from_token(token):\n    for name, record in USERS.items():\n        if record[\"token\"] == token:\n            return name\n    raise PermissionError(\"jeton inconnu\")\n",
+       "app/api.py": "\"\"\"FactuAPI — service de facturation (routes publiques et protégées).\"\"\"\n\nfrom . import store\n\n\ndef health(request):\n    return {\"status\": 200, \"body\": {\"status\": \"ok\"}}\n\n\ndef login(request):\n    token = request.get(\"json\", {}).get(\"token\", \"\")\n    try:\n        return {\"status\": 200, \"body\": {\"user\": store.user_from_token(token)}}\n    except PermissionError:\n        return {\"status\": 401, \"body\": {\"error\": \"jeton invalide\"}}\n\n\ndef list_invoices(request):\n    user = request[\"user\"]\n    if store.USERS[user][\"role\"] == \"auditor\":\n        return {\"status\": 200, \"body\": {\"ids\": sorted(store.INVOICES)}}\n    owned = [key for key, invoice in store.INVOICES.items() if invoice[\"owner\"] == user]\n    return {\"status\": 200, \"body\": {\"ids\": owned}}\n\n\ndef get_invoice(request):\n    user = request[\"user\"]\n    key = int(request[\"path_params\"][\"id\"])\n    invoice = store.INVOICES.get(key)\n    if invoice is None:\n        return {\"status\": 404, \"body\": {\"error\": \"facture inconnue\"}}\n    if invoice[\"owner\"] != user and store.USERS[user][\"role\"] != \"auditor\":\n        return {\"status\": 403, \"body\": {\"error\": \"accès refusé\"}}\n    return {\"status\": 200, \"body\": dict(invoice)}\n\n\ndef pay_invoice(request):\n    return {\"status\": 202, \"body\": {\"status\": \"paiement en cours\"}}\n\n\ndef delete_invoice(request):\n    return {\"status\": 204, \"body\": None}\n\n\n# Source de vérité de la surface exposée : toute route passe par cette table.\nROUTES = [\n    {\"method\": \"GET\", \"path\": \"/health\", \"handler\": \"health\", \"public\": True},\n    {\"method\": \"POST\", \"path\": \"/login\", \"handler\": \"login\", \"public\": True},\n    {\"method\": \"GET\", \"path\": \"/invoices\", \"handler\": \"list_invoices\", \"public\": False},\n    {\"method\": \"GET\", \"path\": \"/invoices/{id}\", \"handler\": \"get_invoice\", \"public\": False},\n    {\"method\": \"POST\", \"path\": \"/invoices/{id}/pay\", \"handler\": \"pay_invoice\", \"public\": False},\n    {\"method\": \"DELETE\", \"path\": \"/invoices/{id}\", \"handler\": \"delete_invoice\", \"public\": False},\n]\n"
+      },
+      "dirs": [
+       "tools"
+      ],
+      "checks": [
+       {
+        "id": "outil",
+        "type": "file_exists",
+        "path": "tools/surface.py",
+        "label": "L'outil d'inventaire tools/surface.py existe"
+       },
+       {
+        "id": "recap",
+        "type": "run",
+        "cmd": "python3 tools/surface.py",
+        "expect": "^surface: 6 routes, 2 publiques, 4 protegees$",
+        "label": "L'outil produit le récapitulatif attendu"
+       },
+       {
+        "id": "route-delete",
+        "type": "run",
+        "cmd": "python3 tools/surface.py",
+        "expect": "^DELETE /invoices/\\{id\\} auth=oui delete_invoice$",
+        "label": "Les routes protégées sont marquées auth=oui avec leur handler"
+       },
+       {
+        "id": "route-login",
+        "type": "run",
+        "cmd": "python3 tools/surface.py",
+        "expect": "^POST /login auth=non login$",
+        "label": "La route publique de connexion est identifiée"
+       },
+       {
+        "id": "surface-md",
+        "type": "file_exists",
+        "path": "surface.md",
+        "label": "La cartographie surface.md est rédigée"
+       },
+       {
+        "id": "idor",
+        "type": "file_contains",
+        "path": "surface.md",
+        "pattern": "(?i)IDOR",
+        "label": "Le risque IDOR sur /invoices/{id} est nommé"
+       },
+       {
+        "id": "bruteforce",
+        "type": "file_contains",
+        "path": "surface.md",
+        "pattern": "(?i)limitation|brute force|force brute",
+        "label": "L'absence de limitation sur POST /login est documentée"
+       }
+      ],
+      "hints": [
+       "sys.path[0] vaut tools/ quand tu lances `python3 tools/surface.py` : ajoute la racine du projet avec Path(__file__).resolve().parents[1].",
+       "Le format attendu est littéral : `GET /health auth=non health`.",
+       "Deux routes portent \"public\": True dans ROUTES : ce sont les seules publiques."
+      ],
+      "verify_hint": "Les contrôles relancent ton outil, puis relisent surface.md. Rien d'autre n'est exécuté.",
+      "solution": "mkdir -p tools\ncat > tools/surface.py <<'PY'\n#!/usr/bin/env python3\n\"\"\"Inventorie la surface exposée par FactuAPI depuis la table ROUTES.\"\"\"\n\nimport sys\nfrom pathlib import Path\n\nsys.path.insert(0, str(Path(__file__).resolve().parents[1]))\n\nfrom app.api import ROUTES  # noqa: E402\n\n\ndef main():\n    publiques = 0\n    for route in ROUTES:\n        auth = \"non\" if route[\"public\"] else \"oui\"\n        if route[\"public\"]:\n            publiques += 1\n        print(\"{} {} auth={} {}\".format(route[\"method\"], route[\"path\"], auth, route[\"handler\"]))\n    total = len(ROUTES)\n    print(\"surface: {} routes, {} publiques, {} protegees\".format(total, publiques, total - publiques))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY\ncat > surface.md <<'MD'\n# Surface d'attaque — FactuAPI\n\n| Méthode | Route | Auth | Risque principal |\n|---|---|---|---|\n| GET | /health | non | divulgation mineure |\n| POST | /login | non | force brute : aucune limitation de tentatives |\n| GET | /invoices | oui | énumération des factures d'un compte |\n| GET | /invoices/{id} | oui | IDOR : identifiant séquentiel devinable |\n| POST | /invoices/{id}/pay | oui | rejeu de paiement, absence de jeton anti-CSRF |\n| DELETE | /invoices/{id} | oui | action destructrice sans journal d'audit |\n\n## Priorisation\n\n1. `GET /invoices/{id}` — IDOR : l'objet consulté est choisi par le client.\n2. `POST /login` — aucune limitation de tentatives, jeton statique accepté.\n3. `DELETE /invoices/{id}` — suppression sans confirmation ni trace.\n\n## Suite\n\nChaque route protégée doit recevoir un test d'autorisation (propriétaire, auditeur, inconnue).\nMD\npython3 tools/surface.py\n"
+     }
+    },
+    {
+     "id": "m16-02",
+     "title": "IDOR : un identifiant ne donne pas un droit",
+     "brief": "La consultation d'une facture accepte n'importe quel identifiant. La suite de tests attend le contrôle d'accès : rends-la verte sans casser les cas légitimes.",
+     "difficulty": "hard",
+     "points": 400,
+     "estimated_minutes": 50,
+     "tags": [
+      "IDOR",
+      "contrôle d'accès",
+      "tests",
+      "CVSS"
+     ],
+     "objectives": [
+      "Reproduire une fuite de données par référence directe à un objet",
+      "Corriger par autorisation côté serveur, pas par obscurcissement",
+      "Écrire le rapport d'impact et garder la correction sous test"
+     ],
+     "lesson": {
+      "summary": "Un IDOR (Insecure Direct Object Reference) survient quand le client choisit l'objet qu'il consulte et que le serveur vérifie seulement que l'utilisateur est connecté. Le correctif n'est pas de cacher les identifiants : c'est de comparer, pour chaque objet, l'appelant et le propriétaire. Le test de non-régression est la partie qui empêche le retour de la faille.",
+      "sections": [
+       {
+        "id": "mecanisme",
+        "name": "Le mécanisme",
+        "content": "`get_invoice(\"bob\", 101)` renvoie la facture d'alice : l'authentification est vérifiée, l'autorisation ne l'est pas. Les identifiants séquentiels (101, 102, 103) rendent l'énumération triviale ; avec des UUID, la faille resterait identique, simplement moins découvrable."
+       },
+       {
+        "id": "correction",
+        "name": "Corriger : autorisation par objet",
+        "content": "Trois cas à distinguer. Le propriétaire : accès autorisé. L'auditeur : lecture seule, sur tous les objets, c'est un rôle, pas une exception codée au cas par cas. Les autres : refus 403. Une facture inexistante renvoie 404, sans révéler quoi que ce soit d'autre. L'identifiant est normalisé (int) pour qu'un `\"101\"` textuel ne contourne pas la comparaison."
+       },
+       {
+        "id": "test",
+        "name": "La non-régression fait partie du correctif",
+        "content": "Une correction sans test revient en trois sprints. Ici, six cas couvrent propriétaire, tiers, auditeur, facture inconnue, identifiant textuel et identifiant invalide. La CI refuse toute régression : c'est ce qui transforme un correctif en garantie."
+       }
+      ],
+      "references": [
+       {
+        "command": "python3 run_tests.py",
+        "role": "Lancer la suite comme la CI",
+        "example": "python3 run_tests.py"
+       },
+       {
+        "command": "assertRaises(PermissionError)",
+        "role": "Exiger un refus explicite",
+        "example": "with self.assertRaises(PermissionError): get_invoice(\"bob\", 101)"
+       },
+       {
+        "command": "store.USERS.get(user, {}).get(\"role\")",
+        "role": "Vérifier un rôle sans lever d'exception",
+        "example": "role = store.USERS.get(user, {}).get(\"role\")"
+       }
+      ],
+      "pitfalls": [
+       "Cacher les identifiants (UUID) en croyant corriger : l'autorisation manque toujours.",
+       "Renvoyer 404 pour un refus : l'utilisateur légitime ne comprend pas, et l'audit perd le signal.",
+       "Traiter le rôle auditeur par un `if user == \"audit\"` en dur au lieu d'un rôle."
+      ]
+     },
+     "remediation": "La même logique protège toutes les ressources : une fonction unique d'autorisation par objet, appelée par chaque handler, testée une fois pour toutes les routes.",
+     "lab": {
+      "task": "Rends `python3 run_tests.py` vert sans modifier les tests. Corrige app/api.py : propriétaire autorisé, auditeur en lecture, tiers refusé (PermissionError), facture inconnue en LookupError, identifiant textuel normalisé, identifiant invalide rejeté. Rédige ensuite rapport-idor.md (sévérité CVSS, impact, cause, remédiation, détection).",
+      "steps": [
+       "Lance `python3 run_tests.py` et lis les échecs : ils décrivent le contrat attendu",
+       "Ajoute la vérification de propriétaire dans get_invoice",
+       "Traite le rôle auditeur, puis les cas 404 et identifiant invalide",
+       "Rédige le rapport d'impact"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/store.py": "\"\"\"Dépôt en mémoire de FactuAPI (données de démonstration).\"\"\"\n\nINVOICES = {\n    101: {\"id\": 101, \"owner\": \"alice\", \"amount\": 1200.0, \"status\": \"payée\"},\n    102: {\"id\": 102, \"owner\": \"bob\", \"amount\": 340.0, \"status\": \"ouverte\"},\n    103: {\"id\": 103, \"owner\": \"alice\", \"amount\": 89.0, \"status\": \"ouverte\"},\n}\n\nUSERS = {\n    \"alice\": {\"role\": \"user\", \"token\": \"tok-alice\"},\n    \"bob\": {\"role\": \"user\", \"token\": \"tok-bob\"},\n    \"audit\": {\"role\": \"auditor\", \"token\": \"tok-audit\"},\n}\n\n\ndef user_from_token(token):\n    for name, record in USERS.items():\n        if record[\"token\"] == token:\n            return name\n    raise PermissionError(\"jeton inconnu\")\n",
+       "tests/__init__.py": "\"\"\"Suite de tests de FactuAPI.\"\"\"\n",
+       "run_tests.py": "#!/usr/bin/env python3\n\"\"\"Lance la suite de tests de FactuAPI, exactement comme la CI.\"\"\"\n\nimport sys\nimport unittest\n\nsuite = unittest.defaultTestLoader.discover(\"tests\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=1).run(suite)\nif result.wasSuccessful():\n    print(\"OK — suite conforme\")\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+       "app/api.py": "\"\"\"FactuAPI — consultation et paiement d'une facture.\"\"\"\n\nfrom . import store\n\n\ndef get_invoice(user, invoice_id):\n    \"\"\"Renvoie la facture demandée.\"\"\"\n    try:\n        key = int(invoice_id)\n    except (TypeError, ValueError):\n        raise ValueError(\"identifiant invalide\")\n    return dict(store.INVOICES[key])\n\n\ndef pay_invoice(user, invoice_id):\n    \"\"\"Encaisse la facture et renvoie le reçu.\"\"\"\n    invoice = store.INVOICES[int(invoice_id)]\n    invoice[\"status\"] = \"payée\"\n    return dict(invoice)\n",
+       "tests/test_authz.py": "\"\"\"Non-régression : chaque facture a un propriétaire, la lecture et le paiement sont distincts.\"\"\"\n\nimport unittest\n\nfrom app import store\nfrom app.api import get_invoice, pay_invoice\n\n\nclass AuthzTest(unittest.TestCase):\n    def test_proprietaire(self):\n        self.assertEqual(get_invoice(\"alice\", 101)[\"owner\"], \"alice\")\n\n    def test_autre_utilisateur_refuse(self):\n        with self.assertRaises(PermissionError):\n            get_invoice(\"bob\", 101)\n\n    def test_auditeur_lecture_seule(self):\n        self.assertEqual(get_invoice(\"audit\", 101)[\"owner\"], \"alice\")\n\n    def test_facture_inconnue(self):\n        with self.assertRaises(LookupError):\n            get_invoice(\"alice\", 999)\n\n    def test_identifiant_normalise(self):\n        self.assertEqual(get_invoice(\"alice\", \"101\")[\"id\"], 101)\n\n    def test_identifiant_invalide(self):\n        with self.assertRaises(ValueError):\n            get_invoice(\"alice\", \"abc\")\n\n    def test_paiement_tiers_refuse(self):\n        avant = store.INVOICES[103][\"status\"]\n        with self.assertRaises(PermissionError):\n            pay_invoice(\"bob\", 103)\n        self.assertEqual(store.INVOICES[103][\"status\"], avant)\n\n    def test_paiement_auditeur_refuse(self):\n        avant = store.INVOICES[102][\"status\"]\n        with self.assertRaises(PermissionError):\n            pay_invoice(\"audit\", 102)\n        self.assertEqual(store.INVOICES[102][\"status\"], avant)\n\n    def test_paiement_proprietaire(self):\n        self.assertEqual(pay_invoice(\"bob\", 102)[\"status\"], \"payée\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+      },
+      "dirs": [],
+      "checks": [
+       {
+        "id": "tests",
+        "type": "run",
+        "cmd": "python3 run_tests.py",
+        "expect": "^OK — suite conforme$",
+        "label": "La suite d'autorisation passe"
+       },
+       {
+        "id": "tests-intacts",
+        "type": "file_contains",
+        "path": "tests/test_authz.py",
+        "pattern": "test_paiement_auditeur_refuse",
+        "label": "Les tests d'autorisation sont toujours présents"
+       },
+       {
+        "id": "perm",
+        "type": "file_contains",
+        "path": "app/api.py",
+        "pattern": "PermissionError",
+        "label": "Le refus d'accès est explicite dans le code"
+       },
+       {
+        "id": "proprio",
+        "type": "file_contains",
+        "path": "app/api.py",
+        "pattern": "owner",
+        "label": "La propriété de la facture est vérifiée"
+       },
+       {
+        "id": "rapport-cvss",
+        "type": "file_contains",
+        "path": "rapport-idor.md",
+        "pattern": "(?i)CVSS",
+        "label": "Le rapport qualifie la sévérité (CVSS)"
+       },
+       {
+        "id": "rapport-fix",
+        "type": "file_contains",
+        "path": "rapport-idor.md",
+        "pattern": "(?i)rem[ée]diation",
+        "label": "Le rapport décrit la remédiation"
+       }
+      ],
+      "hints": [
+       "Le test attend PermissionError, pas un retour vide : le refus doit être explicite.",
+       "`store.INVOICES.get(key)` renvoie None pour 999 : c'est le moment de lever LookupError.",
+       "L'auditeur doit pouvoir lire la facture d'alice : traite son rôle avant le refus."
+      ],
+      "verify_hint": "Les contrôles exécutent la suite de tests puis relisent le rapport.",
+      "solution": "cat > app/api.py <<'PY'\n\"\"\"FactuAPI — lecture et paiement autorisés par objet.\"\"\"\n\nfrom . import store\n\n\ndef _load(invoice_id):\n    try:\n        key = int(invoice_id)\n    except (TypeError, ValueError):\n        raise ValueError(\"identifiant invalide\")\n    invoice = store.INVOICES.get(key)\n    if invoice is None:\n        raise LookupError(\"facture inconnue\")\n    return invoice\n\n\ndef get_invoice(user, invoice_id):\n    invoice = _load(invoice_id)\n    role = store.USERS.get(user, {}).get(\"role\")\n    if invoice[\"owner\"] != user and role != \"auditor\":\n        raise PermissionError(\"accès refusé\")\n    return dict(invoice)\n\n\ndef pay_invoice(user, invoice_id):\n    invoice = _load(invoice_id)\n    if invoice[\"owner\"] != user:\n        raise PermissionError(\"accès refusé : seul le propriétaire peut payer\")\n    invoice[\"status\"] = \"payée\"\n    return dict(invoice)\nPY\ncat > rapport-idor.md <<'MD'\n# Rapport — IDOR sur les factures\n\n- Sévérité : élevée (CVSS 7.5, AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N).\n- Actifs : consultation et paiement d'une facture (`get_invoice`, `pay_invoice`).\n- Cause : l'identifiant vient du client et les fonctions ne comparent jamais l'appelant au\n  propriétaire de la facture ; le rôle auditeur n'est pas distingué du propriétaire.\n- Preuve : `get_invoice(\"bob\", 101)` renvoyait la facture d'alice et\n  `pay_invoice(\"bob\", 103)` la marquait payée.\n- Remédiation : autorisation par objet côté serveur, lecture réservée au propriétaire et à\n  l'auditeur, paiement réservé au propriétaire, 404 pour une facture inexistante,\n  tests de non-régression exécutés en CI.\n- Détection : pic de 403 par session, corrélation des identifiants consultés par un compte,\n  surveillance des changements de statut sans paiement associé.\nMD\npython3 run_tests.py\n"
+     }
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "title": "Entrées hostiles",
+   "description": "Injection de commandes et téléversements : deux entrées, deux façons de sortir du cadre.",
+   "category": "applications",
+   "difficulty": "hard",
+   "missions": [
+    {
+     "id": "m17-01",
+     "title": "Injection de commandes dans un diagnostic réseau",
+     "brief": "Un handler d'administration concatène l'hôte dans une commande shell. Ferme la faille par liste blanche, prouve-le par les tests et documente l'impact.",
+     "difficulty": "hard",
+     "points": 450,
+     "estimated_minutes": 55,
+     "tags": [
+      "injection de commandes",
+      "subprocess",
+      "liste blanche",
+      "CVSS"
+     ],
+     "objectives": [
+      "Reconnaître une injection de commandes (shell=True + concaténation)",
+      "Remplacer un filtrage naïf par une validation stricte et un appel sans shell",
+      "Documenter l'exécution de code obtenue et sa remédiation"
+     ],
+     "lesson": {
+      "summary": "Dès qu'une entrée est concaténée dans une commande passée à un shell, l'entrée devient du code. Ni `;`, ni `$()`, ni un retour à la ligne ne sont nécessaires pour s'en rendre compte : la preuve tient en une ligne. Le correctif ne filtre pas des caractères, il valide un format attendu et supprime le shell de l'équation.",
+      "sections": [
+       {
+        "id": "faille",
+        "name": "La faille : concaténation + shell",
+        "content": "`subprocess.run(\"echo PING \" + host, shell=True)` confie la chaîne complète à bash. Avec `127.0.0.1; id`, bash exécute deux commandes : le diagnostic, puis `id`. L'entrée n'a pas besoin d'être « spéciale » : elle a seulement besoin d'être interprétée."
+       },
+       {
+        "id": "filtres",
+        "name": "Pourquoi les filtres naïfs échouent",
+        "content": "Bannir `;` laisse passer `$(id)`, les retours à la ligne, les tubes et l'expansion de variables. Bannir une liste de caractères revient à jouer au chat et à la souris : il suffit d'une syntaxe oubliée. La seule question qui compte est « à quoi ressemble une entrée valide ? »."
+       },
+       {
+        "id": "correction",
+        "name": "Corriger : liste blanche, aucun shell",
+        "content": "Un hôte valide est un nom ou une IP : `^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$`. On valide, on refuse (ValueError) tout le reste, puis on appelle `subprocess.run` avec une liste d'arguments et `shell=False` : plus aucune interprétation possible."
+       }
+      ],
+      "references": [
+       {
+        "command": "re.fullmatch(r\"^[A-Za-z0-9.-]+$\", host)",
+        "role": "Valider un hôte par liste blanche",
+        "example": "if not HOST_RE.match(host): raise ValueError(...)"
+       },
+       {
+        "command": "subprocess.run([\"echo\", ...], shell=False)",
+        "role": "Exécuter sans shell",
+        "example": "subprocess.run([\"echo\", \"PING \" + host], shell=False, capture_output=True)"
+       },
+       {
+        "command": "python3 run_tests.py",
+        "role": "Vérifier que l'exécution de code a disparu",
+        "example": "python3 run_tests.py"
+       }
+      ],
+      "pitfalls": [
+       "Bloquer `;` et considérer la faille corrigée : `$(id)` passe encore.",
+       "Construire la commande puis « nettoyer » la chaîne : la validation doit précéder l'usage.",
+       "Garder shell=True avec une liste d'arguments : le shell interprète de nouveau les métacaractères."
+      ]
+     },
+     "remediation": "Côté défense : le service n'a pas besoin d'un shell. Un compte de service sans shell, des arguments séparés et une journalisation des hôtes refusés suppriment la classe entière de faille, pas seulement la charge utile du jour.",
+     "lab": {
+      "task": "Rends `python3 run_tests.py` vert sans modifier les tests. Corrige app/diagnostics.py : liste blanche de l'hôte, ValueError pour tout le reste, appel sans shell. Rédige rapport-injection.md : sévérité CVSS, preuve d'exécution de code, remédiation et défense en profondeur.",
+      "steps": [
+       "Lance la suite : les cas d'injection montrent que `id` s'exécute",
+       "Écris une expression régulière qui n'accepte que lettres, chiffres, points et tirets",
+       "Valide avant de construire la commande, puis passe une liste avec shell=False",
+       "Documente la preuve et la remédiation"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/store.py": "\"\"\"Dépôt en mémoire de FactuAPI (données de démonstration).\"\"\"\n\nINVOICES = {\n    101: {\"id\": 101, \"owner\": \"alice\", \"amount\": 1200.0, \"status\": \"payée\"},\n    102: {\"id\": 102, \"owner\": \"bob\", \"amount\": 340.0, \"status\": \"ouverte\"},\n    103: {\"id\": 103, \"owner\": \"alice\", \"amount\": 89.0, \"status\": \"ouverte\"},\n}\n\nUSERS = {\n    \"alice\": {\"role\": \"user\", \"token\": \"tok-alice\"},\n    \"bob\": {\"role\": \"user\", \"token\": \"tok-bob\"},\n    \"audit\": {\"role\": \"auditor\", \"token\": \"tok-audit\"},\n}\n\n\ndef user_from_token(token):\n    for name, record in USERS.items():\n        if record[\"token\"] == token:\n            return name\n    raise PermissionError(\"jeton inconnu\")\n",
+       "tests/__init__.py": "\"\"\"Suite de tests de FactuAPI.\"\"\"\n",
+       "run_tests.py": "#!/usr/bin/env python3\n\"\"\"Lance la suite de tests de FactuAPI, exactement comme la CI.\"\"\"\n\nimport sys\nimport unittest\n\nsuite = unittest.defaultTestLoader.discover(\"tests\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=1).run(suite)\nif result.wasSuccessful():\n    print(\"OK — suite conforme\")\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+       "app/diagnostics.py": "\"\"\"Diagnostic réseau exposé par l'administration de FactuAPI.\n\nLa route /admin/ping appelle ping() avec l'hôte fourni par le client.\n\"\"\"\n\nimport subprocess\n\n\ndef ping(host):\n    \"\"\"Renvoie la sortie du diagnostic pour l'hôte demandé.\"\"\"\n    result = subprocess.run(\"echo PING \" + host, shell=True, capture_output=True, text=True, timeout=5)\n    return result.stdout.strip()\n",
+       "tests/test_diagnostics.py": "\"\"\"Non-régression : l'hôte fourni ne doit jamais devenir du code.\"\"\"\n\nimport unittest\n\nfrom app.diagnostics import ping\n\n\nclass DiagnosticsTest(unittest.TestCase):\n    def assert_no_execution(self, host):\n        try:\n            sortie = ping(host)\n        except ValueError:\n            return\n        self.assertNotIn(\"uid=\", sortie)\n\n    def test_hote_ip_valide(self):\n        self.assertIn(\"PING 192.0.2.10\", ping(\"192.0.2.10\"))\n\n    def test_nom_de_domaine_valide(self):\n        self.assertIn(\"PING example.internal\", ping(\"example.internal\"))\n\n    def test_injection_point_virgule(self):\n        self.assert_no_execution(\"127.0.0.1; id\")\n\n    def test_injection_substitution(self):\n        self.assert_no_execution(\"127.0.0.1$(id)\")\n\n    def test_injection_retour_ligne(self):\n        self.assert_no_execution(\"127.0.0.1\\nid\")\n\n    def test_option_refusee(self):\n        with self.assertRaises(ValueError):\n            ping(\"-oProxyCommand=curl attaquant\")\n\n    def test_espace_refuse(self):\n        with self.assertRaises(ValueError):\n            ping(\"a b\")\n\n    def test_vide_refuse(self):\n        with self.assertRaises(ValueError):\n            ping(\"\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+      },
+      "dirs": [],
+      "checks": [
+       {
+        "id": "tests",
+        "type": "run",
+        "cmd": "python3 run_tests.py",
+        "expect": "^OK — suite conforme$",
+        "label": "Les tests d'injection passent"
+       },
+       {
+        "id": "tests-intacts",
+        "type": "file_contains",
+        "path": "tests/test_diagnostics.py",
+        "pattern": "test_injection_point_virgule",
+        "label": "Les tests d'injection sont toujours présents"
+       },
+       {
+        "id": "no-shell",
+        "type": "file_not_contains",
+        "path": "app/diagnostics.py",
+        "pattern": "shell\\s*=\\s*True",
+        "label": "Plus aucun appel avec shell=True"
+       },
+       {
+        "id": "allowlist",
+        "type": "file_contains",
+        "path": "app/diagnostics.py",
+        "pattern": "re\\.(match|fullmatch)|HOST_RE|compile\\(",
+        "label": "L'hôte est validé par une liste blanche"
+       },
+       {
+        "id": "rapport-cvss",
+        "type": "file_contains",
+        "path": "rapport-injection.md",
+        "pattern": "(?i)CVSS",
+        "label": "Le rapport qualifie la sévérité (CVSS)"
+       },
+       {
+        "id": "rapport-preuve",
+        "type": "file_contains",
+        "path": "rapport-injection.md",
+        "pattern": "(?i)uid=|ex[ée]cution",
+        "label": "Le rapport décrit la preuve d'exécution de code"
+       }
+      ],
+      "hints": [
+       "`192.0.2.10` et `example.internal` doivent rester acceptés : ta validation doit être une liste blanche, pas un refus de tout.",
+       "ValueError est attendu pour `-oProxyCommand=curl attaquant`, `a b` et la chaîne vide.",
+       "Le test d'injection accepte deux issues : refus explicite, ou sortie sans `uid=`."
+      ],
+      "verify_hint": "La suite de tests sert de preuve : l'appel avec `; id` ne doit plus produire d'exécution.",
+      "solution": "cat > app/diagnostics.py <<'PY'\n\"\"\"Diagnostic réseau exposé par l'administration de FactuAPI.\"\"\"\n\nimport re\nimport subprocess\n\nHOST_RE = re.compile(r\"^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$\")\n\n\ndef ping(host):\n    \"\"\"Diagnostic d'un hôte validé : liste blanche, aucun shell.\"\"\"\n    if not isinstance(host, str) or not HOST_RE.match(host):\n        raise ValueError(\"hôte invalide : lettres, chiffres, points et tirets uniquement\")\n    result = subprocess.run(\n        [\"echo\", \"PING \" + host],\n        shell=False,\n        capture_output=True,\n        text=True,\n        timeout=5,\n    )\n    return result.stdout.strip()\nPY\ncat > rapport-injection.md <<'MD'\n# Rapport — injection de commandes (diagnostic /admin/ping)\n\n- Sévérité : critique (CVSS 9.1, AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H).\n- Actif : diagnostic réseau, fonction `ping`, exposée par /admin/ping.\n- Cause : concaténation de l'entrée dans une chaîne passée à `shell=True`.\n- Preuve : `127.0.0.1; id` renvoie `uid=...`, donc exécution de commande arbitraire.\n- Remédiation : liste blanche stricte de l'hôte, appel sans shell, arguments séparés.\n- Défense en profondeur : compte de service sans shell, journalisation des refus.\nMD\npython3 run_tests.py\n"
+     }
+    },
+    {
+     "id": "m17-02",
+     "title": "Téléversements : traversée, extension, taille",
+     "brief": "Une route d'envoi de pièces jointes écrit le nom fourni tel quel. La suite de tests couvre les traversées, les liens symboliques, l'extension et la taille : fais-la passer.",
+     "difficulty": "hard",
+     "points": 450,
+     "estimated_minutes": 55,
+     "tags": [
+      "téléversement",
+      "traversée de répertoire",
+      "pathlib",
+      "défense en profondeur"
+     ],
+     "objectives": [
+      "Traiter un nom de fichier comme une entrée hostile",
+      "Combiner plusieurs contrôles : nom, extension, taille, chemin résolu",
+      "Écrire le rapport d'une faille de téléversement"
+     ],
+     "lesson": {
+      "summary": "Un nom de fichier est une entrée utilisateur : il peut contenir une traversée, un chemin absolu, un antislash, un lien symbolique. La défense est en profondeur — un format de nom strict, une liste d'extensions, une taille maximale, puis la vérification que la cible résolue reste dans le dossier prévu. Aucun de ces contrôles ne suffit seul.",
+      "sections": [
+       {
+        "id": "entree",
+        "name": "Le nom de fichier est une entrée",
+        "content": "`UPLOAD_DIR / filename` paraît inoffensif. Avec `../../etc/passwd`, le chemin sort du dossier ; avec `/tmp/evil.png`, il l'ignore complètement. Les antislashs comptent aussi : un nom peut être normalisé différemment selon la plateforme."
+       },
+       {
+        "id": "profondeur",
+        "name": "Quatre contrôles qui se complètent",
+        "content": "Format du nom (lettres, chiffres, tiret, point), extension autorisée, taille maximale, et enfin `resolve()` puis comparaison du parent avec le dossier d'envoi. Le dernier contrôle rattrape ce que les autres laissent passer, y compris un lien symbolique déjà présent dans le dossier."
+       },
+       {
+        "id": "stockage",
+        "name": "Stocker pour ne pas servir",
+        "content": "Le dossier d'envoi ne doit pas être servi par le serveur web : un fichier téléversé ne doit jamais devenir du code ou du HTML exécutable. En production, on génère le nom côté serveur, on stocke hors racine web et on sert avec `Content-Disposition: attachment`."
+       }
+      ],
+      "references": [
+       {
+        "command": "Path(UPLOAD_DIR).resolve()",
+        "role": "Résoudre la racine avant comparaison",
+        "example": "root = Path(UPLOAD_DIR).resolve()"
+       },
+       {
+        "command": "target.parent != root",
+        "role": "Vérifier que la cible reste dans le dossier",
+        "example": "if (root / name).resolve().parent != root: raise ValueError(...)"
+       },
+       {
+        "command": "Path(filename).suffix.lower()",
+        "role": "Contrôler l'extension",
+        "example": "if Path(filename).suffix.lower() not in ALLOWED_EXTENSIONS: raise ValueError(...)"
+       }
+      ],
+      "pitfalls": [
+       "Remplacer `..` dans la chaîne par du vide : `....//` redevient `../` après normalisation.",
+       "Faire confiance au Content-Type déclaré par le client.",
+       "Se contenter de `os.path.basename` : cela bloque la traversée mais pas un lien symbolique."
+      ]
+     },
+     "remediation": "Côté défense, on ajoute un antivirus asynchrone, un quota par compte et des noms générés côté serveur : la validation à l'entrée reste la première barrière, pas la seule.",
+     "lab": {
+      "task": "Rends `python3 run_tests.py` vert sans modifier les tests. Corrige app/uploads.py : nom contrôlé par liste blanche, extension autorisée, taille maximale, cible résolue confinée au dossier d'envoi, liens symboliques refusés. Rédige rapport-upload.md (CVSS, preuves, remédiation, défense en profondeur).",
+      "steps": [
+       "Lance la suite et note les cas refusés qui ne le sont pas encore",
+       "Écris une expression régulière de nom de fichier et une liste d'extensions",
+       "Résous la cible puis compare son parent au dossier d'envoi",
+       "Rédige le rapport"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/store.py": "\"\"\"Dépôt en mémoire de FactuAPI (données de démonstration).\"\"\"\n\nINVOICES = {\n    101: {\"id\": 101, \"owner\": \"alice\", \"amount\": 1200.0, \"status\": \"payée\"},\n    102: {\"id\": 102, \"owner\": \"bob\", \"amount\": 340.0, \"status\": \"ouverte\"},\n    103: {\"id\": 103, \"owner\": \"alice\", \"amount\": 89.0, \"status\": \"ouverte\"},\n}\n\nUSERS = {\n    \"alice\": {\"role\": \"user\", \"token\": \"tok-alice\"},\n    \"bob\": {\"role\": \"user\", \"token\": \"tok-bob\"},\n    \"audit\": {\"role\": \"auditor\", \"token\": \"tok-audit\"},\n}\n\n\ndef user_from_token(token):\n    for name, record in USERS.items():\n        if record[\"token\"] == token:\n            return name\n    raise PermissionError(\"jeton inconnu\")\n",
+       "tests/__init__.py": "\"\"\"Suite de tests de FactuAPI.\"\"\"\n",
+       "run_tests.py": "#!/usr/bin/env python3\n\"\"\"Lance la suite de tests de FactuAPI, exactement comme la CI.\"\"\"\n\nimport sys\nimport unittest\n\nsuite = unittest.defaultTestLoader.discover(\"tests\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=1).run(suite)\nif result.wasSuccessful():\n    print(\"OK — suite conforme\")\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+       "app/uploads.py": "\"\"\"Réception de pièces jointes (logos, scans PDF) de FactuAPI.\"\"\"\n\nfrom pathlib import Path\n\nUPLOAD_DIR = Path(\"var/uploads\")\nMAX_BYTES = 1024 * 1024\nALLOWED_EXTENSIONS = {\".png\", \".jpg\", \".pdf\"}\n\n\ndef save_upload(filename, content):\n    \"\"\"Enregistre le fichier envoyé et renvoie son chemin.\"\"\"\n    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)\n    target = UPLOAD_DIR / filename\n    target.write_bytes(content)\n    return target\n",
+       "tests/test_uploads.py": "\"\"\"Non-régression : un nom de fichier est une entrée hostile.\"\"\"\n\nimport tempfile\nimport unittest\nfrom pathlib import Path\n\nfrom app import uploads\n\n\nclass UploadTest(unittest.TestCase):\n    def setUp(self):\n        self.tmp = tempfile.TemporaryDirectory()\n        self.addCleanup(self.tmp.cleanup)\n        uploads.UPLOAD_DIR = Path(self.tmp.name) / \"uploads\"\n\n    def save(self, name, content=b\"data\"):\n        return uploads.save_upload(name, content)\n\n    def test_nom_simple(self):\n        path = self.save(\"logo.png\")\n        self.assertEqual(path.parent, uploads.UPLOAD_DIR.resolve())\n        self.assertEqual(path.read_bytes(), b\"data\")\n\n    def test_traversee_refusee(self):\n        with self.assertRaises(ValueError):\n            self.save(\"../../etc/passwd\")\n\n    def test_chemin_absolu_refuse(self):\n        with self.assertRaises(ValueError):\n            self.save(\"/tmp/evil.png\")\n\n    def test_antislash_refuse(self):\n        with self.assertRaises(ValueError):\n            self.save(\"..\\\\..\\\\evil.png\")\n\n    def test_extension_refusee(self):\n        with self.assertRaises(ValueError):\n            self.save(\"script.sh\")\n\n    def test_fichier_trop_gros(self):\n        with self.assertRaises(ValueError):\n            self.save(\"scan.pdf\", b\"x\" * (uploads.MAX_BYTES + 1))\n\n    def test_lien_symbolique_refuse(self):\n        root = uploads.UPLOAD_DIR\n        root.mkdir(parents=True, exist_ok=True)\n        (root / \"piege.png\").symlink_to(\"/etc/hostname\")\n        with self.assertRaises(ValueError):\n            self.save(\"piege.png\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+      },
+      "dirs": [],
+      "checks": [
+       {
+        "id": "tests",
+        "type": "run",
+        "cmd": "python3 run_tests.py",
+        "expect": "^OK — suite conforme$",
+        "label": "Les tests de téléversement passent"
+       },
+       {
+        "id": "tests-intacts",
+        "type": "file_contains",
+        "path": "tests/test_uploads.py",
+        "pattern": "test_traversee_refusee",
+        "label": "Les tests de téléversement sont toujours présents"
+       },
+       {
+        "id": "limite",
+        "type": "file_contains",
+        "path": "app/uploads.py",
+        "pattern": "MAX_BYTES",
+        "label": "La taille maximale est appliquée"
+       },
+       {
+        "id": "resolve",
+        "type": "file_contains",
+        "path": "app/uploads.py",
+        "pattern": "resolve\\(",
+        "label": "Le chemin est résolu avant écriture"
+       },
+       {
+        "id": "rapport-cvss",
+        "type": "file_contains",
+        "path": "rapport-upload.md",
+        "pattern": "(?i)CVSS",
+        "label": "Le rapport qualifie la sévérité (CVSS)"
+       },
+       {
+        "id": "rapport-trav",
+        "type": "file_contains",
+        "path": "rapport-upload.md",
+        "pattern": "(?i)travers[ée]e|\\.\\./",
+        "label": "Le rapport documente la traversée de répertoire"
+       }
+      ],
+      "hints": [
+       "Le test remplace `uploads.UPLOAD_DIR` : lis la variable au moment de l'appel, pas en argument par défaut.",
+       "`..\\\\..\\\\evil.png` est un nom d'échappement Python qui contient de vrais antislashs.",
+       "Un fichier `piege.png` qui est un lien symbolique doit être refusé avant toute écriture."
+      ],
+      "verify_hint": "Les tests utilisent un dossier temporaire : rien n'est écrit hors du laboratoire.",
+      "solution": "cat > app/uploads.py <<'PY'\n\"\"\"Réception de pièces jointes (logos, scans PDF) de FactuAPI.\"\"\"\n\nimport re\nfrom pathlib import Path\n\nUPLOAD_DIR = Path(\"var/uploads\")\nMAX_BYTES = 1024 * 1024\nALLOWED_EXTENSIONS = {\".png\", \".jpg\", \".pdf\"}\nNAME_RE = re.compile(r\"^[A-Za-z0-9_-]{1,64}\\.(png|jpg|pdf)$\")\n\n\ndef save_upload(filename, content):\n    \"\"\"Valide le nom, la taille et l'extension avant d'écrire dans le dossier d'envoi.\"\"\"\n    if not isinstance(content, (bytes, bytearray)):\n        raise ValueError(\"contenu invalide\")\n    if len(content) > MAX_BYTES:\n        raise ValueError(\"fichier trop volumineux\")\n    if not isinstance(filename, str) or not NAME_RE.match(filename):\n        raise ValueError(\"nom de fichier refusé : caractères non autorisés ou extension inconnue\")\n    extension = Path(filename).suffix.lower()\n    if extension not in ALLOWED_EXTENSIONS:\n        raise ValueError(\"extension refusée\")\n\n    root = Path(UPLOAD_DIR).resolve()\n    root.mkdir(parents=True, exist_ok=True)\n    target = (root / filename).resolve()\n    if target.parent != root or target.is_symlink():\n        raise ValueError(\"le fichier doit rester dans le dossier d'envoi\")\n    target.write_bytes(bytes(content))\n    return target\nPY\ncat > rapport-upload.md <<'MD'\n# Rapport — téléversement non maîtrisé\n\n- Sévérité : haute (CVSS 8.1, AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N).\n- Actif : envoi de pièces jointes, fonction `save_upload`.\n- Cause : le nom fourni par le client sert de chemin relatif, sans limite de taille ni\n  liste blanche d'extensions ; un lien symbolique déjà présent est suivi.\n- Preuve : `../../etc/passwd` et `/tmp/evil.png` écrivaient hors du dossier d'envoi,\n  et `script.sh` était accepté.\n- Remédiation : nom contrôlé, extension autorisée, taille maximale, `resolve()` puis\n  vérification du parent, refus des liens symboliques.\n- Défense en profondeur : antivirus asynchrone, `Content-Disposition: attachment`,\n  quota par compte.\nMD\npython3 run_tests.py\n"
+     }
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "title": "Défense en continu",
+   "description": "Durcir les réponses HTTP et installer une passerelle qui bloque les régressions.",
+   "category": "applications",
+   "difficulty": "expert",
+   "missions": [
+    {
+     "id": "m18-01",
+     "title": "En-têtes de sécurité et CSP",
+     "brief": "L'API ne renvoie qu'un Content-Type. Les tests exigent CSP, nosniff, HSTS, Permissions-Policy, cache et cookie de session durci : durcis la couche HTTP.",
+     "difficulty": "hard",
+     "points": 400,
+     "estimated_minutes": 50,
+     "tags": [
+      "en-têtes",
+      "CSP",
+      "cookies",
+      "tests"
+     ],
+     "objectives": [
+      "Choisir une CSP utile plutôt qu'une CSP décorative",
+      "Durcir les cookies de session et le cache des pages sensibles",
+      "Rendre les en-têtes testables donc non régressifs"
+     ],
+     "lesson": {
+      "summary": "Les en-têtes de sécurité sont la partie de la défense qui coûte le moins cher et qui tient le plus longtemps. Une CSP correcte neutralise une bonne partie des XSS, `nosniff` empêche un navigateur de deviner un type, HSTS force TLS, et un cookie `HttpOnly; Secure; SameSite` retire au JavaScript l'accès à la session. Tout cela se teste.",
+      "sections": [
+       {
+        "id": "principe",
+        "name": "Ce que fait réellement un en-tête",
+        "content": "Le navigateur applique ce que le serveur déclare. Sans `nosniff`, il peut interpréter un fichier téléversé comme du script. Sans `frame-ancestors`, un site tiers peut cadrer l'application et capter les clics. Sans HSTS, la première requête peut partir en clair."
+       },
+       {
+        "id": "csp",
+        "name": "CSP : le bon compromis",
+        "content": "`default-src 'self'` interdit les origines externes, `object-src 'none'` supprime les greffons, `base-uri 'self'` empêche le détournement de chemins relatifs, `frame-ancestors 'none'` bloque le cadrage, `form-action 'self'` empêche l'exfiltration par formulaire. Une CSP trop permissive (`unsafe-inline`) donne l'illusion de la protection."
+       },
+       {
+        "id": "cookies",
+        "name": "Cookies, cache et fuites discrètes",
+        "content": "`HttpOnly` retire le cookie du JavaScript, `Secure` interdit son envoi en clair, `SameSite=Lax` limite les requêtes inter-sites. En parallèle, `Cache-Control: no-store` sur /login et /invoices/* évite qu'un proxy ou un poste partagé conserve des données personnelles."
+       }
+      ],
+      "references": [
+       {
+        "command": "Strict-Transport-Security",
+        "role": "Forcer HTTPS pendant un an",
+        "example": "max-age=31536000; includeSubDomains"
+       },
+       {
+        "command": "Content-Security-Policy",
+        "role": "Restreindre les sources de contenu",
+        "example": "default-src 'self'; object-src 'none'; frame-ancestors 'none'"
+       },
+       {
+        "command": "python3 run_tests.py",
+        "role": "Vérifier les en-têtes comme du code",
+        "example": "python3 run_tests.py"
+       }
+      ],
+      "pitfalls": [
+       "Ajouter `unsafe-inline` pour faire taire une erreur : la CSP ne protège alors plus rien.",
+       "Envoyer HSTS en HTTP clair : l'en-tête doit être ignoré hors TLS.",
+       "Oublier `no-store` sur les pages authentifiées : le cache conserve les données."
+      ]
+     },
+     "remediation": "Côté production, ces en-têtes s'appliquent au niveau du reverse proxy pour couvrir aussi les réponses d'erreur, avec les mêmes tests en CI sur une réponse réelle.",
+     "lab": {
+      "task": "Rends `python3 run_tests.py` vert sans modifier les tests. Durcis app/http.py : CSP, nosniff, Referrer-Policy, Permissions-Policy, HSTS uniquement en HTTPS, no-store sur /login et /invoices/*, cookie `HttpOnly; Secure; SameSite=Lax` sans fuite de version. Rédige rapport-entetes.md : le tableau des en-têtes et leur effet.",
+      "steps": [
+       "Lance la suite : chaque test décrit un en-tête attendu",
+       "Centralise les en-têtes dans un dictionnaire unique",
+       "Ne mets HSTS que si secure=True",
+       "Documente chaque en-tête dans le rapport"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/store.py": "\"\"\"Dépôt en mémoire de FactuAPI (données de démonstration).\"\"\"\n\nINVOICES = {\n    101: {\"id\": 101, \"owner\": \"alice\", \"amount\": 1200.0, \"status\": \"payée\"},\n    102: {\"id\": 102, \"owner\": \"bob\", \"amount\": 340.0, \"status\": \"ouverte\"},\n    103: {\"id\": 103, \"owner\": \"alice\", \"amount\": 89.0, \"status\": \"ouverte\"},\n}\n\nUSERS = {\n    \"alice\": {\"role\": \"user\", \"token\": \"tok-alice\"},\n    \"bob\": {\"role\": \"user\", \"token\": \"tok-bob\"},\n    \"audit\": {\"role\": \"auditor\", \"token\": \"tok-audit\"},\n}\n\n\ndef user_from_token(token):\n    for name, record in USERS.items():\n        if record[\"token\"] == token:\n            return name\n    raise PermissionError(\"jeton inconnu\")\n",
+       "tests/__init__.py": "\"\"\"Suite de tests de FactuAPI.\"\"\"\n",
+       "run_tests.py": "#!/usr/bin/env python3\n\"\"\"Lance la suite de tests de FactuAPI, exactement comme la CI.\"\"\"\n\nimport sys\nimport unittest\n\nsuite = unittest.defaultTestLoader.discover(\"tests\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=1).run(suite)\nif result.wasSuccessful():\n    print(\"OK — suite conforme\")\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+       "app/http.py": "\"\"\"Couche HTTP minimale de FactuAPI.\"\"\"\n\n\ndef build_response(status, body, *, path=\"/\", secure=True):\n    headers = {\"Content-Type\": \"application/json\"}\n    if path.startswith(\"/login\"):\n        headers[\"Cache-Control\"] = \"no-store\"\n    return {\"status\": status, \"headers\": headers, \"body\": body}\n\n\ndef session_cookie(token):\n    return \"session={}; Path=/\".format(token)\n",
+       "tests/test_headers.py": "\"\"\"Non-régression : les en-têtes de sécurité sont du code, donc testables.\"\"\"\n\nimport unittest\n\nfrom app import http\n\n\ndef build(path=\"/\", secure=True):\n    return http.build_response(200, {\"ok\": True}, path=path, secure=secure)\n\n\nclass HeadersTest(unittest.TestCase):\n    def test_csp(self):\n        csp = build()[\"headers\"][\"Content-Security-Policy\"]\n        self.assertIn(\"default-src 'self'\", csp)\n        self.assertIn(\"object-src 'none'\", csp)\n        self.assertIn(\"frame-ancestors 'none'\", csp)\n\n    def test_nosniff(self):\n        self.assertEqual(build()[\"headers\"][\"X-Content-Type-Options\"], \"nosniff\")\n\n    def test_referrer(self):\n        self.assertEqual(build()[\"headers\"][\"Referrer-Policy\"], \"strict-origin-when-cross-origin\")\n\n    def test_permissions(self):\n        policy = build()[\"headers\"][\"Permissions-Policy\"]\n        for feature in (\"camera=()\", \"microphone=()\", \"geolocation=()\"):\n            self.assertIn(feature, policy)\n\n    def test_hsts_en_https(self):\n        hsts = build(secure=True)[\"headers\"][\"Strict-Transport-Security\"]\n        self.assertIn(\"includeSubDomains\", hsts)\n        max_age = int(hsts.split(\"max-age=\")[1].split(\";\")[0])\n        self.assertGreaterEqual(max_age, 15552000)\n\n    def test_pas_de_hsts_en_clair(self):\n        self.assertNotIn(\"Strict-Transport-Security\", build(secure=False)[\"headers\"])\n\n    def test_cache_no_store(self):\n        self.assertEqual(build(path=\"/login\")[\"headers\"][\"Cache-Control\"], \"no-store\")\n        self.assertEqual(build(path=\"/invoices/101\")[\"headers\"][\"Cache-Control\"], \"no-store\")\n\n    def test_cookie_session(self):\n        cookie = http.session_cookie(\"jeton-de-test\")\n        self.assertIn(\"HttpOnly\", cookie)\n        self.assertIn(\"Secure\", cookie)\n        self.assertIn(\"SameSite=Lax\", cookie)\n        self.assertIn(\"Path=/\", cookie)\n\n    def test_pas_de_fuite_de_version(self):\n        headers = build()[\"headers\"]\n        self.assertNotIn(\"Server\", headers)\n        self.assertNotIn(\"X-Powered-By\", headers)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+      },
+      "dirs": [],
+      "checks": [
+       {
+        "id": "tests",
+        "type": "run",
+        "cmd": "python3 run_tests.py",
+        "expect": "^OK — suite conforme$",
+        "label": "Les tests d'en-têtes passent"
+       },
+       {
+        "id": "tests-intacts",
+        "type": "file_contains",
+        "path": "tests/test_headers.py",
+        "pattern": "test_csp",
+        "label": "Les tests d'en-têtes sont toujours présents"
+       },
+       {
+        "id": "csp",
+        "type": "file_contains",
+        "path": "app/http.py",
+        "pattern": "Content-Security-Policy",
+        "label": "La CSP est déclarée dans le code"
+       },
+       {
+        "id": "hsts",
+        "type": "file_contains",
+        "path": "app/http.py",
+        "pattern": "Strict-Transport-Security",
+        "label": "HSTS est appliqué en HTTPS"
+       },
+       {
+        "id": "rapport-csp",
+        "type": "file_contains",
+        "path": "rapport-entetes.md",
+        "pattern": "(?i)CSP|Content-Security-Policy",
+        "label": "Le rapport explique la CSP"
+       },
+       {
+        "id": "rapport-cookie",
+        "type": "file_contains",
+        "path": "rapport-entetes.md",
+        "pattern": "(?i)cookie",
+        "label": "Le rapport documente le durcissement des cookies"
+       }
+      ],
+      "hints": [
+       "`test_pas_de_hsts_en_clair` impose HSTS uniquement quand secure=True.",
+       "Le cookie de session attendu contient HttpOnly, Secure, SameSite=Lax et Path=/.",
+       "`no-store` doit s'appliquer à /login et à /invoices/101 : deux préfixes."
+      ],
+      "verify_hint": "Les contrôles relancent la suite de tests d'en-têtes puis relisent le rapport.",
+      "solution": "cat > app/http.py <<'PY'\n\"\"\"Couche HTTP minimale de FactuAPI : en-têtes de sécurité centralisés.\"\"\"\n\nCSP = (\n    \"default-src 'self'; \"\n    \"script-src 'self'; \"\n    \"style-src 'self'; \"\n    \"img-src 'self' data:; \"\n    \"object-src 'none'; \"\n    \"base-uri 'self'; \"\n    \"frame-ancestors 'none'; \"\n    \"form-action 'self'\"\n)\n\nPERMISSIONS = \"camera=(), microphone=(), geolocation=(), payment=()\"\n\n\ndef build_response(status, body, *, path=\"/\", secure=True):\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Content-Security-Policy\": CSP,\n        \"X-Content-Type-Options\": \"nosniff\",\n        \"Referrer-Policy\": \"strict-origin-when-cross-origin\",\n        \"Permissions-Policy\": PERMISSIONS,\n        \"Cross-Origin-Opener-Policy\": \"same-origin\",\n        \"X-Frame-Options\": \"DENY\",\n    }\n    if secure:\n        headers[\"Strict-Transport-Security\"] = \"max-age=31536000; includeSubDomains\"\n    if path.startswith(\"/login\") or path.startswith(\"/invoices\"):\n        headers[\"Cache-Control\"] = \"no-store\"\n    return {\"status\": status, \"headers\": headers, \"body\": body}\n\n\ndef session_cookie(token):\n    return \"session={}; Path=/; HttpOnly; Secure; SameSite=Lax\".format(token)\nPY\ncat > rapport-entetes.md <<'MD'\n# Rapport — durcissement des en-têtes HTTP\n\n| En-tête | Valeur | Effet |\n|---|---|---|\n| Content-Security-Policy | default-src 'self'; object-src 'none'; frame-ancestors 'none' | neutralise XSS et cadrage |\n| X-Content-Type-Options | nosniff | empêche le reniflage de type |\n| Referrer-Policy | strict-origin-when-cross-origin | limite la fuite d'URL |\n| Permissions-Policy | camera=(), microphone=(), geolocation=() | coupe les capteurs |\n| Strict-Transport-Security | max-age=31536000; includeSubDomains | force TLS |\n| Cache-Control | no-store sur /login et /invoices/* | pas de fuite par cache |\n\n## Cookies\n\n`session=...; Path=/; HttpOnly; Secure; SameSite=Lax` : inaccessible au JavaScript, jamais\nenvoyé en clair, jamais transmis depuis un site tiers.\n\n## Vérification\n\nLa CSP et les autres en-têtes sont couverts par des tests exécutés en CI : toute régression\ncasse le pipeline avant la production.\nMD\npython3 run_tests.py\n"
+     }
+    },
+    {
+     "id": "m18-02",
+     "title": "Passerelle de sécurité en CI",
+     "brief": "Quatre motifs interdits traînent dans le code. Écris la passerelle qui les bloque en CI, prouve qu'elle détecte les régressions, puis nettoie l'application.",
+     "difficulty": "expert",
+     "points": 500,
+     "estimated_minutes": 60,
+     "tags": [
+      "CI",
+      "outillage",
+      "revue automatisée",
+      "remédiation"
+     ],
+     "objectives": [
+      "Écrire un outil de contrôle qui bloque une régression en pipeline",
+      "Prouver l'outil par un test qui injecte volontairement une violation",
+      "Corriger le code pour que la passerelle et la suite passent ensemble"
+     ],
+     "lesson": {
+      "summary": "Une revue humaine rate ce qu'un outil voit à chaque commit. La passerelle de sécurité est un petit programme déterministe : des règles, un parcours de fichiers, un code de sortie. Sa valeur vient de deux propriétés — elle détecte vraiment (prouvé par un test) et elle ne crie pas au loup (le projet doit passer au vert). Une règle sans test finit désactivée.",
+      "sections": [
+       {
+        "id": "outil",
+        "name": "Pourquoi une passerelle plutôt qu'une revue",
+        "content": "`DEBUG = True`, une clé en dur, `shell=True`, `eval`, `pickle.loads` : ces motifs sont mécaniques. Un outil les voit à chaque commit, en 50 millisecondes, avec le fichier et la ligne. La revue garde sa place pour le contexte, pas pour la détection."
+       },
+       {
+        "id": "regles",
+        "name": "Des règles qui ne mentent pas",
+        "content": "Une règle trop large produit des faux positifs, l'équipe ajoute des exceptions, la passerelle devient décorative. On écrit donc des motifs précis (`^\\s*DEBUG\\s*=\\s*True\\b`), on les teste sur un échantillon fautif, et on vérifie que le projet réel sort propre. C'est exactement ce que fait tests/test_gate.py."
+       },
+       {
+        "id": "boucle",
+        "name": "La boucle complète : détecter, corriger, documenter",
+        "content": "La passerelle doit d'abord échouer sur l'application telle qu'elle est : c'est la preuve qu'elle sert à quelque chose. On corrige ensuite chaque motif par son remplacement légitime (environnement, liste d'arguments, `ast.literal_eval`, `json.loads`), jusqu'à `gate: OK` et suite verte. La documentation fige la règle du projet."
+       }
+      ],
+      "references": [
+       {
+        "command": "python3 tools/security_gate.py",
+        "role": "Lancer la passerelle comme la CI",
+        "example": "python3 tools/security_gate.py"
+       },
+       {
+        "command": "re.compile(r\"shell\\s*=\\s*True\")",
+        "role": "Écrire une règle précise",
+        "example": "(\"shell-true\", re.compile(r\"shell\\s*=\\s*True\"))"
+       },
+       {
+        "command": "python3 run_tests.py",
+        "role": "Prouver que la passerelle détecte bien",
+        "example": "python3 run_tests.py"
+       }
+      ],
+      "pitfalls": [
+       "Écrire une règle qui ne se déclenche jamais : la CI est verte et ne protège rien.",
+       "Désactiver une règle au lieu de corriger le code qu'elle signale.",
+       "Chercher des motifs dans les tests et se retrouver avec des faux positifs : cible `app/`."
+      ]
+     },
+     "remediation": "Côté industrie, la passerelle complète l'analyse de dépendances et les tests dynamiques. Elle coûte une journée à écrire et attrape, à chaque commit, les régressions que personne ne relit.",
+     "lab": {
+      "task": "Écris tools/security_gate.py : cinq règles (debug-actif, secret-en-dur, shell-true, eval, pickle), une fonction `scan(root)` qui renvoie des `Finding(rule, path, line)`, et une CLI qui affiche `gate: OK` (code 0) ou `gate: KO <fichier>:<ligne> <règle>` (code 1). Corrige ensuite app/config.py, app/tasks.py et app/serialization.py pour que `python3 run_tests.py` passe, puis rédige docs/securite-ci.md.",
+      "steps": [
+       "Lance `python3 run_tests.py` : l'import de tools.security_gate échoue, c'est le point de départ",
+       "Écris scan() avec rglob sur *.py et cinq expressions régulières",
+       "Ajoute la CLI avec le code de sortie 0/1",
+       "Corrige les quatre motifs dans app/, puis documente la règle"
+      ],
+      "files": {
+       "app/__init__.py": "\"\"\"FactuAPI — application de facturation utilisée dans les laboratoires.\"\"\"\n",
+       "app/config.py": "\"\"\"Configuration de FactuAPI.\"\"\"\n\nDEBUG = True\nSECRET_KEY = \"dev-secret-1234\"\nDATABASE_URL = \"postgresql://factuapi:factuapi@localhost/factuapi\"\nALLOWED_HOSTS = [\"*\"]\n",
+       "app/tasks.py": "\"\"\"Tâches d'administration de FactuAPI.\"\"\"\n\nimport subprocess\n\n\ndef rotate_log(path):\n    return subprocess.run(\"gzip -f \" + path, shell=True, capture_output=True, text=True)\n\n\ndef evaluate_expression(expression):\n    return eval(expression)\n",
+       "app/serialization.py": "\"\"\"Chargement des sessions sérialisées de FactuAPI.\"\"\"\n\nimport pickle\n\n\ndef load_session(raw):\n    return pickle.loads(raw)\n",
+       "tools/__init__.py": "\"\"\"Outils d'audit de FactuAPI.\"\"\"\n",
+       "tests/__init__.py": "\"\"\"Suite de tests de FactuAPI.\"\"\"\n",
+       "tests/test_gate.py": "\"\"\"Non-régression : la passerelle voit les régressions, et le projet reste propre.\"\"\"\n\nimport tempfile\nimport unittest\nfrom pathlib import Path\n\nfrom tools.security_gate import scan\n\nSAMPLE = \"\"\"\nDEBUG = True\nSECRET_KEY = \"supersecret\"\nimport subprocess\nsubprocess.run(cmd, shell=True)\nvalue = eval(entree)\nimport pickle\npickle.loads(raw)\n\"\"\"\n\n\nclass GateTest(unittest.TestCase):\n    def test_detecte_les_regles(self):\n        with tempfile.TemporaryDirectory() as tmp:\n            (Path(tmp) / \"failli.py\").write_text(SAMPLE, encoding=\"utf-8\")\n            rules = {finding.rule for finding in scan(Path(tmp))}\n        for expected in (\"debug-actif\", \"secret-en-dur\", \"shell-true\", \"eval\", \"pickle\"):\n            self.assertIn(expected, rules)\n\n    def test_projet_propre(self):\n        findings = scan(Path(\"app\"))\n        self.assertEqual([], [str(finding) for finding in findings])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+       "run_tests.py": "#!/usr/bin/env python3\n\"\"\"Lance la suite de tests de FactuAPI, exactement comme la CI.\"\"\"\n\nimport sys\nimport unittest\n\nsuite = unittest.defaultTestLoader.discover(\"tests\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=1).run(suite)\nif result.wasSuccessful():\n    print(\"OK — suite conforme\")\nsys.exit(0 if result.wasSuccessful() else 1)\n"
+      },
+      "dirs": [
+       "tools",
+       "docs"
+      ],
+      "checks": [
+       {
+        "id": "tests",
+        "type": "run",
+        "cmd": "python3 run_tests.py",
+        "expect": "^OK — suite conforme$",
+        "label": "La suite vérifie la passerelle et la propreté du code"
+       },
+       {
+        "id": "tests-intacts",
+        "type": "file_contains",
+        "path": "tests/test_gate.py",
+        "pattern": "test_detecte_les_regles",
+        "label": "Le test de détection de la passerelle est toujours présent"
+       },
+       {
+        "id": "gate",
+        "type": "run",
+        "cmd": "python3 tools/security_gate.py",
+        "expect": "^gate: OK$",
+        "label": "La passerelle sort en gate: OK sur l'application corrigée"
+       },
+       {
+        "id": "debug",
+        "type": "file_not_contains",
+        "path": "app/config.py",
+        "pattern": "DEBUG\\s*=\\s*True",
+        "label": "Plus de DEBUG = True dans la configuration"
+       },
+       {
+        "id": "doc-gate",
+        "type": "file_contains",
+        "path": "docs/securite-ci.md",
+        "pattern": "(?i)test_gate",
+        "label": "La documentation cite le test de non-régression de la passerelle"
+       },
+       {
+        "id": "doc-regle",
+        "type": "file_contains",
+        "path": "docs/securite-ci.md",
+        "pattern": "(?i)r[èe]gle",
+        "label": "La documentation décrit les règles de la passerelle"
+       }
+      ],
+      "hints": [
+       "Les noms de règles sont imposés : debug-actif, secret-en-dur, shell-true, eval, pickle.",
+       "`scan(Path(\"app\"))` doit renvoyer une liste vide une fois le code corrigé.",
+       "Le remplacement de `eval` est `ast.literal_eval` : le motif `eval(` ne doit plus apparaître."
+      ],
+      "verify_hint": "Les contrôles exécutent ta passerelle et la suite de tests, tous deux dans le laboratoire.",
+      "solution": "mkdir -p tools docs\ncat > tools/security_gate.py <<'PY'\n#!/usr/bin/env python3\n\"\"\"Passerelle de sécurité de FactuAPI : bloque les motifs interdits en CI.\"\"\"\n\nimport re\nimport sys\nfrom dataclasses import dataclass\nfrom pathlib import Path\n\nRULES = [\n    (\"debug-actif\", re.compile(r\"^\\s*DEBUG\\s*=\\s*True\\b\", re.MULTILINE)),\n    (\"secret-en-dur\", re.compile(r\"^\\s*(SECRET_KEY|PASSWORD|API_KEY)\\s*=\\s*['\\\"][^'\\\"]+['\\\"]\", re.MULTILINE)),\n    (\"shell-true\", re.compile(r\"shell\\s*=\\s*True\")),\n    (\"eval\", re.compile(r\"(?<![\\w.])eval\\(\")),\n    (\"pickle\", re.compile(r\"pickle\\.loads\\(\")),\n]\n\n\n@dataclass(frozen=True)\nclass Finding:\n    rule: str\n    path: str\n    line: int\n\n    def __str__(self):\n        return \"{}:{} {}\".format(self.path, self.line, self.rule)\n\n\ndef scan(root):\n    \"\"\"Renvoie la liste des violations trouvées sous root.\"\"\"\n    findings = []\n    root = Path(root)\n    for path in sorted(root.rglob(\"*.py\")):\n        if not path.is_file():\n            continue\n        text = path.read_text(encoding=\"utf-8\", errors=\"replace\")\n        for rule, pattern in RULES:\n            for match in pattern.finditer(text):\n                line = text.count(\"\\n\", 0, match.start()) + 1\n                findings.append(Finding(rule, str(path), line))\n    return findings\n\n\ndef main(argv=None):\n    argv = list(sys.argv[1:] if argv is None else argv)\n    root = Path(argv[0]) if argv else Path(\"app\")\n    findings = scan(root)\n    if findings:\n        for finding in findings:\n            print(\"gate: KO {}\".format(finding))\n        return 1\n    print(\"gate: OK\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY\ncat > app/config.py <<'PY'\n\"\"\"Configuration de FactuAPI : tout vient de l'environnement.\"\"\"\n\nimport os\n\nDEBUG = os.getenv(\"FACTUAPI_DEBUG\", \"0\") == \"1\"\nSECRET_KEY = os.environ.get(\"FACTUAPI_SECRET_KEY\", \"\")\nDATABASE_URL = os.environ.get(\"FACTUAPI_DATABASE_URL\", \"\")\nALLOWED_HOSTS = [host for host in os.getenv(\"FACTUAPI_ALLOWED_HOSTS\", \"localhost\").split(\",\") if host]\nPY\ncat > app/tasks.py <<'PY'\n\"\"\"Tâches d'administration de FactuAPI.\"\"\"\n\nimport ast\nimport subprocess\n\nLOG_PREFIX = \"/var/log/factuapi/\"\n\n\ndef rotate_log(path):\n    if not path.startswith(LOG_PREFIX):\n        raise ValueError(\"chemin de journal non autorisé\")\n    return subprocess.run([\"gzip\", \"-f\", path], shell=False, capture_output=True, text=True)\n\n\ndef evaluate_expression(expression):\n    \"\"\"N'accepte que des littéraux (nombres, chaînes, listes), jamais du code.\"\"\"\n    return ast.literal_eval(expression)\nPY\ncat > app/serialization.py <<'PY'\n\"\"\"Chargement des sessions sérialisées de FactuAPI.\"\"\"\n\nimport json\n\n\ndef load_session(raw):\n    data = json.loads(raw)\n    if not isinstance(data, dict) or \"user\" not in data:\n        raise ValueError(\"session invalide\")\n    return data\nPY\ncat > docs/securite-ci.md <<'MD'\n# Passerelle de sécurité en CI\n\n## Principe\n\n`tools/security_gate.py` lit le code de `app/`, applique cinq règles et sort en erreur dès\nqu'une violation est trouvée. La CI lance la passerelle avant les tests.\n\n| Règle | Détecte | Remplacement |\n|---|---|---|\n| debug-actif | DEBUG = True | variable d'environnement |\n| secret-en-dur | clé littérale | os.environ.get + coffre |\n| shell-true | shell=True | liste d'arguments |\n| eval | eval(...) | ast.literal_eval |\n| pickle | pickle.loads | json.loads validé |\n\n## Boucle de travail\n\n1. `python3 tools/security_gate.py` sort en `gate: OK` quand `app/` est propre.\n2. `python3 run_tests.py` exécute tests/test_gate.py : la passerelle doit détecter les\n   violations sur un échantillon fautif et le projet doit rester propre.\n3. Toute nouvelle règle arrive avec son échantillon de test.\n\n## Règle assumée\n\nLe projet ne doit pas contenir DEBUG = True, shell=True, eval ni pickle.loads.\nMD\npython3 tools/security_gate.py\npython3 run_tests.py\n"
+     }
+    }
+   ]
+  }
+ ]
+}

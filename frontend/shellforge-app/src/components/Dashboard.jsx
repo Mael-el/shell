@@ -56,8 +56,9 @@ const Dashboard = () => {
             <span className="gradient-text">prouve-la dans le terminal.</span>
           </h1>
           <p className="hero-lead">
-            15 modules, 30 missions vérifiées côté serveur : fondations Bash, administration Linux,
-            reconnaissance, pentest et ingénierie de production. Chaque mission combine un cours, un
+            {summary ? `${summary.modules.length} modules, ${summary.total_missions} missions` : 'Des missions'}{' '}
+            vérifiées côté serveur : fondations Bash, administration Linux, reconnaissance, pentest,
+            ingénierie de production et sécurité applicative. Chaque mission combine un cours, un
             laboratoire équipé et des contrôles qui valident tes preuves.
           </p>
           {nextMission && (

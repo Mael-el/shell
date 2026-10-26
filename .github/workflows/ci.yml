@@ -28,7 +28,7 @@ jobs:
       - name: Tests API
         run: python -m pytest -q
 
-      - name: Vérifier les 30 missions de bout en bout
+      - name: Vérifier les 36 missions de bout en bout
         run: python scripts/selfcheck_curriculum.py
 
   frontend:
