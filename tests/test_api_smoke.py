@@ -176,3 +176,22 @@ def test_preview_origin_is_allowed_by_cors(tmp_path):
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "https://5173-demo.e2b.app"
+
+
+def test_session_lookup_returns_progress_or_404(tmp_path):
+    client = _prepare_env(tmp_path)
+    session_id = _session(client)
+
+    found = client.get(f"/api/sessions/{session_id}")
+    assert found.status_code == 200
+    payload = found.json()
+    assert payload["session_id"] == session_id
+    assert payload["user_id"] == "pytest-user"
+    assert payload["score"] == 0
+    assert payload["level"] == 1
+    assert payload["completed_missions"] == 0
+    assert payload["started_at"]
+
+    missing = client.get("/api/sessions/session-inexistante")
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "Session introuvable"

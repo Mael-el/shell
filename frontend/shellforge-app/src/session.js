@@ -8,7 +8,16 @@ export const resetSession = () => localStorage.removeItem(SESSION_KEY)
 
 export async function ensureSession() {
   const existing = getSessionId()
-  if (existing) return existing
+  if (existing) {
+    // La base peut avoir été réinitialisée (session inconnue) : on vérifie avant usage.
+    try {
+      const check = await fetch(apiUrl(`/api/sessions/${encodeURIComponent(existing)}`))
+      if (check.ok) return existing
+      localStorage.removeItem(SESSION_KEY)
+    } catch (err) {
+      if (err instanceof TypeError) throw new Error('API injoignable : vérifie que le backend est démarré')
+    }
+  }
   const response = await fetch(apiUrl('/api/sessions'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

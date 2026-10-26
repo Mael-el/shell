@@ -702,6 +702,21 @@ async def create_session(session: SessionCreate):
     return {"session_id": session_id, "message": "Session créée"}
 
 
+@app.get("/api/sessions/{session_id}")
+async def get_session(session_id: str):
+    """Valide l'existence d'une session (utilisé par le front pour détecter une session périmée)."""
+    session = require_session(session_id)
+    rows = session_progress_map(session_id)
+    return {
+        "session_id": session_id,
+        "user_id": session.get("user_id"),
+        "score": session.get("score", 0),
+        "level": session.get("level", 1),
+        "started_at": session.get("started_at"),
+        "completed_missions": sum(1 for row in rows.values() if row["completed"]),
+    }
+
+
 @app.post("/api/missions/{mission_id}/verify")
 async def verify(mission_id: str, payload: dict):
     session_id = payload.get("session_id")

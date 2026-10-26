@@ -45,7 +45,10 @@ backend/
   curriculum/level-*.json contenu pédagogique (6 fichiers, 30 missions)
 frontend/shellforge-app/  React 19 + Vite (parcours, mission, console, progression)
 scripts/selfcheck_curriculum.py  auto-contrôle : joue chaque solution et vérifie les preuves
+scripts/dev.sh            démarre backend + frontend en une commande
 tests/test_api_smoke.py   tests de l'API et du moteur de laboratoire
+frontend/shellforge-app/tests/ui-smoke.mjs  fumée UI (jsdom, 5 écrans, contre l'API réelle)
+.github/workflows/ci.yml  CI : pytest, selfcheck 30/30, lint, build, fumée UI
 ```
 
 ### Ajouter une mission
@@ -67,11 +70,18 @@ tests/test_api_smoke.py   tests de l'API et du moteur de laboratoire
 | POST | `/api/missions/{id}/verify` | exécute les contrôles de preuves |
 | POST | `/api/learning/progress` | marque une section comme lue |
 | POST | `/api/sessions` | crée une session d'apprentissage |
+| GET | `/api/sessions/{id}` | valide une session (404 si la base a été réinitialisée) |
 | GET | `/api/sessions/{id}/summary` | XP, niveau, progression par niveau/module |
+| GET | `/api/sessions/{id}/progress`, `/stats` | progression détaillée, statistiques |
 | GET/POST | `/api/labs/files`, `/api/labs/run`, `/api/labs/reset` | espace de travail et console |
 | GET | `/api/health` | sonde de disponibilité |
 
 Documentation interactive : `http://localhost:8000/docs`.
+
+Le front mémorise l'identifiant de session dans `localStorage`, mais le revalide au
+chargement (`GET /api/sessions/{id}`) : si la base a été réinitialisée, la session est
+oubliée et une nouvelle est créée automatiquement. Si l'API est injoignable, un message
+explicite s'affiche au lieu d'une page blanche.
 
 ## Démarrage
 
@@ -88,6 +98,12 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
+ou, plus simple, les deux d'un coup :
+
+```bash
+./scripts/dev.sh     # API :8000 + Vite :5173, Ctrl-C pour tout arrêter
+```
+
 Le front appelle des URL relatives (`/api/...`) : Vite les proxifie vers
 `http://127.0.0.1:8000`. Aucun problème de CORS, y compris derrière un proxy de
 prévisualisation. Pour appeler un backend distant, définir `VITE_API_URL`.
@@ -96,13 +112,24 @@ prévisualisation. Pour appeler un backend distant, définir `VITE_API_URL`.
 
 ```bash
 source .venv/bin/activate
-pytest -q                                    # API + laboratoire (8 tests)
+pytest -q                                    # API + laboratoire (9 tests)
 python3 scripts/selfcheck_curriculum.py      # les 30 missions, solutions comprises
+cd frontend/shellforge-app
+npm run lint                                 # oxlint
+npm run build                                # build de production
+npm run test:ui                              # fumée UI (API requise sur :8000)
 ```
+
+`npm run test:ui` monte la vraie application React dans jsdom via le serveur Vite, visite
+`/`, `/niveau/1`, `/module/m01`, `/mission/m01-01` (cours, laboratoire, fichiers) et
+`/progression`, et échoue sur toute erreur console. La CI GitHub Actions exécute ces
+quatre vérifications à chaque push et pull request.
 
 ## Isolation des laboratoires
 
-Chaque commande s'exécute dans `$TMPDIR/shellforge-labs/<session>/<mission>` avec :
+Chaque commande s'exécute dans `$TMPDIR/shellforge-labs/<session>/<mission>` : chaque
+session (et donc chaque apprenant) dispose de son propre répertoire, jamais partagé avec
+les autres, avec :
 
 - validation stricte des segments de chemin (`[A-Za-z0-9_-]`) et refus des `..` ;
 - refus des liens symboliques sortant de l'espace de travail ;
