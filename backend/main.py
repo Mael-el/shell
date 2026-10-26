@@ -55,6 +55,14 @@ DEFAULT_ALLOWED_ORIGINS = [
 ]
 ALLOWED_ORIGINS = _parse_origins(os.getenv('CORS_ALLOWED_ORIGINS', ','.join(DEFAULT_ALLOWED_ORIGINS))) or DEFAULT_ALLOWED_ORIGINS
 
+# Les environnements de prévisualisation (Arena/E2B) servent le front sur un sous-domaine
+# dynamique. On l'autorise via une regex pour que l'API reste utilisable sans configuration.
+DEFAULT_ALLOWED_ORIGIN_REGEX = (
+    r'https?://(localhost|127\.0\.0\.1)(:\d+)?'
+    r'|https?://[a-z0-9-]+\.e2b\.app'
+)
+ALLOWED_ORIGIN_REGEX = os.getenv('CORS_ALLOWED_ORIGIN_REGEX', DEFAULT_ALLOWED_ORIGIN_REGEX)
+
 app = FastAPI(
     title="SHELLFORGE API",
     description="Plateforme d'apprentissage interactive de Bash/Linux",
@@ -65,6 +73,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

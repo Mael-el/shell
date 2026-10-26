@@ -123,3 +123,19 @@ def test_lab_file_browser_does_not_follow_workspace_symlinks(tmp_path):
     finally:
         (session_root / 'c30').unlink()
         session_root.rmdir()
+
+
+def test_preview_origin_is_allowed_by_cors(tmp_path):
+    _prepare_db(tmp_path)
+    client = TestClient(main.app)
+
+    response = client.options(
+        '/api/modules',
+        headers={
+            'Origin': 'https://5173-demo.e2b.app',
+            'Access-Control-Request-Method': 'GET',
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers['access-control-allow-origin'] == 'https://5173-demo.e2b.app'
