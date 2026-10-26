@@ -1,48 +1,26 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 
-const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const userName = 'Apprenant' // Could be fetched from API
-
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
-
-  return (
-    <nav className="navbar">
-      <div className="navbar-logo">
-        <span>SHELLFORGE</span>
-      </div>
-      <ul className="navbar-nav">
-        <li>
-          <Link to="/" className="nav-link">
-            <span className="nav-icon">🏠</span>
-            Accueil
-          </Link>
-        </li>
-        <li>
-          <Link to="/modules" className="nav-link">
-            <span className="nav-icon">📚</span>
-            Modules
-          </Link>
-        </li>
-        <li>
-          <Link to="/profile" className="nav-link">
-            <span className="nav-icon">👤</span>
-            Profil
-          </Link>
-        </li>
-      </ul>
-      <div className="navbar-actions">
-        <button
-          onClick={toggleMenu}
-          className="btn btn-secondary"
-          aria-label="Ouvrir le menu"
-        >
-          {isMenuOpen ? 'Fermer' : 'Menu'}
-        </button>
-      </div>
+const Navbar = () => (
+  <header className="topbar">
+    <Link to="/" className="brand">
+      <span className="brand-mark">›_</span>
+      <span className="brand-text">
+        SHELLFORGE
+        <small>parcours offensif &amp; défensif</small>
+      </span>
+    </Link>
+    <nav className="topnav">
+      <NavLink to="/" end className="nav-link">
+        Parcours
+      </NavLink>
+      <NavLink to="/progression" className="nav-link">
+        Progression
+      </NavLink>
+      <a href="/docs" target="_blank" rel="noreferrer" className="nav-link nav-link-muted">
+        API
+      </a>
     </nav>
-  )
-}
+  </header>
+)
 
 export default Navbar

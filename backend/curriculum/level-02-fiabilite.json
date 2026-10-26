@@ -1,0 +1,538 @@
+{
+  "level": 2,
+  "name": "Ingénierie de la fiabilité",
+  "tagline": "Automatiser sans se tirer une balle dans le pied",
+  "description": "Sauvegardes vérifiables, provisionnement idempotent, diagnostic de ressources et durcissement des services : les compétences qui font qu'un système tient dans le temps.",
+  "icon": "⚙️",
+  "accent": "#34d399",
+  "modules": [
+    {
+      "id": "m04",
+      "title": "Sauvegardes et automatisation sûre",
+      "description": "Écrire des scripts qui nettoient derrière eux, vérifient leur intégrité et peuvent être rejoués à l'infini.",
+      "category": "fiabilite",
+      "difficulty": "medium",
+      "missions": [
+        {
+          "id": "m04-01",
+          "title": "Sauvegarde robuste : pièges, rotation et intégrité",
+          "brief": "Ta première sauvegarde a écrasé un fichier de production. Cette fois, elle sera atomique, vérifiable et auto-nettoyante.",
+          "difficulty": "medium",
+          "points": 200,
+          "estimated_minutes": 45,
+          "tags": [
+            "set -euo",
+            "trap",
+            "tar",
+            "sha256sum",
+            "rotation"
+          ],
+          "objectives": [
+            "Structurer un script avec set -euo pipefail",
+            "Nettoyer un répertoire temporaire avec trap",
+            "Vérifier l'intégrité d'une archive et appliquer une rétention"
+          ],
+          "lesson": {
+            "summary": "Une sauvegarde n'existe que si elle est restaurable. Cela impose trois propriétés : échec immédiat en cas d'erreur (set -euo pipefail), nettoyage garanti (trap EXIT), et preuve d'intégrité (empreinte SHA-256). La rotation évite de saturer le disque.",
+            "sections": [
+              {
+                "id": "robustesse",
+                "name": "Échouer vite et proprement",
+                "content": "set -euo pipefail arrête le script à la première erreur, sur variable non définie ou sur échec dans un pipe. Sans cela, un tar partiel laisse croire à une sauvegarde réussie — le pire scénario en restauration."
+              },
+              {
+                "id": "trap",
+                "name": "trap : le filet de sécurité",
+                "content": "tmp=$(mktemp -d) puis trap 'rm -rf \"$tmp\"' EXIT garantit le nettoyage même en cas d'échec ou d'interruption. On évite ainsi les fuites de disque après des centaines d'exécutions planifiées."
+              },
+              {
+                "id": "integrite",
+                "name": "Prouver l'intégrité",
+                "content": "sha256sum archive > archive.sha256 permet de vérifier plus tard avec sha256sum -c depuis le dossier de l'archive. Sans cette étape, une corruption silencieuse ne se découvre qu'au moment critique."
+              },
+              {
+                "id": "retention",
+                "name": "Rotation",
+                "content": "ls -1t backups/site-*.tar.gz | tail -n +4 supprime tout sauf les 3 plus récents. On supprime aussi l'empreinte associée, sous peine d'accumuler des fichiers orphelins."
+              }
+            ],
+            "references": [
+              {
+                "command": "set -euo pipefail",
+                "role": "Mode strict",
+                "example": "set -euo pipefail"
+              },
+              {
+                "command": "trap 'rm -rf \"$tmp\"' EXIT",
+                "role": "Nettoyage garanti",
+                "example": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT"
+              },
+              {
+                "command": "sha256sum -c archive.sha256",
+                "role": "Vérifier une archive",
+                "example": "( cd backups && sha256sum -c site-20250112.tar.gz.sha256 )"
+              },
+              {
+                "command": "ls -1t | tail -n +4",
+                "role": "Rétention des 3 plus récents",
+                "example": "ls -1t backups/site-*.tar.gz | tail -n +4"
+              }
+            ],
+            "pitfalls": [
+              "Utiliser $(date) sans -u : deux serveurs dans deux fuseaux produisent des noms incohérents.",
+              "Supprimer les archives sans supprimer les .sha256 : la vérification échoue au prochain audit.",
+              "Oublier --dry-run : un script de sauvegarde doit pouvoir être testé sans écrire."
+            ]
+          },
+          "lab": {
+            "task": "Écris backup.sh : crée backups/site-<AAAAMMJJ>.tar.gz depuis data/, écrit son empreinte .sha256, journalise dans logs/backup.log, conserve les 3 archives les plus récentes (avec leurs empreintes) et nettoie son répertoire temporaire. backup.sh --dry-run affiche l'action sans rien écrire.",
+            "steps": [
+              "Commence par set -euo pipefail et un trap de nettoyage",
+              "Archive data/ puis génère l'empreinte SHA-256",
+              "Implémente la rotation et le mode --dry-run"
+            ],
+            "files": {
+              "data/site/index.html": "<h1>Shellforge production</h1>\n",
+              "data/site/app.js": "console.log('shellforge');\n",
+              "data/db/dump.sql": "CREATE TABLE clients (id INTEGER PRIMARY KEY, nom TEXT);\n",
+              "backups/site-20241231.tar.gz": "archive historique de demonstration\n",
+              "backups/site-20250101.tar.gz": "archive historique de demonstration\n",
+              "logs/.keep": "\n"
+            },
+            "dirs": [
+              "data",
+              "backups",
+              "logs"
+            ],
+            "checks": [
+              {
+                "id": "archive-creee",
+                "type": "run",
+                "cmd": "bash backup.sh >/dev/null && ls backups/site-*.tar.gz | wc -l | grep -qx 3 && echo PASS",
+                "expect": "PASS",
+                "label": "Une archive est créée et la rotation conserve 3 archives"
+              },
+              {
+                "id": "integrity",
+                "type": "run",
+                "cmd": "bash backup.sh >/dev/null && (cd backups && sha256sum -c --status *.sha256) && echo PASS",
+                "expect": "PASS",
+                "label": "L'empreinte SHA-256 de l'archive est valide"
+              },
+              {
+                "id": "log",
+                "type": "run",
+                "cmd": "bash backup.sh >/dev/null && grep -qi 'sauvegarde' logs/backup.log && echo PASS",
+                "expect": "PASS",
+                "label": "Une ligne est journalisée dans logs/backup.log"
+              },
+              {
+                "id": "dry-run",
+                "type": "run",
+                "cmd": "bash backup.sh --dry-run | grep -qi 'dry-run' && echo PASS",
+                "expect": "PASS",
+                "label": "Le mode --dry-run est implémenté"
+              },
+              {
+                "id": "strict-mode",
+                "type": "run",
+                "cmd": "grep -q 'set -euo pipefail' backup.sh && grep -q 'trap' backup.sh && echo PASS",
+                "expect": "PASS",
+                "label": "Le script utilise le mode strict et un trap de nettoyage"
+              }
+            ],
+            "hints": [
+              "cd backups avant sha256sum : l'empreinte doit référencer un chemin relatif vérifiable.",
+              "Pour le dry-run, sors avant toute écriture mais après avoir construit le nom de l'archive."
+            ],
+            "solution": "cat > backup.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ndry_run=false\n[[ \"${1:-}\" == \"--dry-run\" ]] && dry_run=true\nstamp=$(date -u +%Y%m%d)\narchive=\"backups/site-$stamp.tar.gz\"\nmkdir -p backups logs\ntmp=$(mktemp -d)\ntrap 'rm -rf \"$tmp\"' EXIT\nif $dry_run; then\n  echo \"dry-run: creerait $archive depuis data/\"\n  exit 0\nfi\ntar -czf \"$archive\" -C data .\n( cd backups && sha256sum \"$(basename \"$archive\")\" > \"$(basename \"$archive\").sha256\" )\necho \"$(date -u +%FT%TZ) sauvegarde $archive ok\" >> logs/backup.log\nls -1t backups/site-*.tar.gz | tail -n +4 | while read -r old; do\n  rm -f \"$old\" \"$old.sha256\"\ndone\nBASH\nchmod +x backup.sh\n"
+          },
+          "remediation": "En production : chiffre les archives (age/gpg), stocke une copie hors site (S3 avec Object Lock), teste la restauration chaque mois et alerte si la dernière archive date de plus de 24 h."
+        },
+        {
+          "id": "m04-02",
+          "title": "Provisionnement idempotent et planification",
+          "brief": "Le script de mise en place doit pouvoir tourner dix fois sans casser la machine. C'est ça, l'idempotence.",
+          "difficulty": "medium",
+          "points": 210,
+          "estimated_minutes": 40,
+          "tags": [
+            "idempotence",
+            "cron",
+            "mkdir -p",
+            "grep -x"
+          ],
+          "objectives": [
+            "Créer des répertoires de façon idempotente",
+            "Ajouter une ligne de configuration sans doublon",
+            "Écrire une planification cron en fichier dédié"
+          ],
+          "lesson": {
+            "summary": "Un script idempotent produit le même état final quel que soit le nombre d'exécutions. C'est la propriété qui distingue un script d'administration d'un script dangereux : pas de doublons dans /etc/passwd, pas de lignes cron dupliquées, pas de dossier imbriqué créé deux fois.",
+            "sections": [
+              {
+                "id": "concept",
+                "name": "État désiré",
+                "content": "On ne dit pas « ajoute cette ligne », on dit « l'état doit contenir cette ligne une seule fois ». mkdir -p, grep -qxF avant ajout, et la réécriture complète de petits fichiers sont les trois techniques de base."
+              },
+              {
+                "id": "cron",
+                "name": "Planifier proprement",
+                "content": "Un fichier dans /etc/cron.d doit contenir des lignes de la forme « minute heure jour mois jour-semaine utilisateur commande ». Un fichier dédié par service se versionne et se supprime proprement, contrairement à une ligne ajoutée dans crontab."
+              },
+              {
+                "id": "verif",
+                "name": "Vérifier l'idempotence",
+                "content": "La preuve : exécuter deux fois puis comparer. Le contrôle automatique le fait pour toi — si la deuxième exécution ajoute une ligne, le test échoue."
+              }
+            ],
+            "references": [
+              {
+                "command": "grep -qxF \"$ligne\" fichier || echo \"$ligne\" >> fichier",
+                "role": "Ajout sans doublon",
+                "example": "grep -qxF \"$entry\" etc/passwd.local || echo \"$entry\" >> etc/passwd.local"
+              },
+              {
+                "command": "cat > fichier <<'EOF'",
+                "role": "Écrire un fichier complet",
+                "example": "cat > etc/cron.d/shellforge <<'EOF'"
+              },
+              {
+                "command": "bash -n script.sh",
+                "role": "Vérifier la syntaxe",
+                "example": "bash -n provisionner.sh"
+              }
+            ],
+            "pitfalls": [
+              "Ajouter une ligne avec >> sans tester sa présence : les doublons s'accumulent à chaque déploiement.",
+              "Créer /etc/cron.d sans respecter le format utilisateur → le fichier est ignoré silencieusement."
+            ]
+          },
+          "lab": {
+            "task": "Écris provisionner.sh idempotent : crée srv/app, srv/logs et etc/cron.d ; garantit une seule ligne appsvc dans etc/passwd.local ; écrit etc/cron.d/shellforge avec exactement deux tâches (healthcheck toutes les 15 minutes, sauvegarde à 2 h) exécutées par appsvc. Deux exécutions consécutives ne doivent rien dupliquer.",
+            "steps": [
+              "Crée les dossiers avec mkdir -p",
+              "Ajoute le compte uniquement s'il est absent (grep -qxF)",
+              "Écris le fichier cron complet puis vérifie en l'exécutant deux fois"
+            ],
+            "files": {
+              "etc/passwd.local": "root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000:Student:/home/student:/bin/bash\n",
+              "ops/runbook.md": "# Runbook app\n\n1. Le service appsvc est non interactif.\n2. Les journaux vivent dans srv/logs.\n3. Toute planification doit être décrite dans etc/cron.d.\n"
+            },
+            "dirs": [
+              "etc"
+            ],
+            "checks": [
+              {
+                "id": "compte-unique",
+                "type": "run",
+                "cmd": "bash provisionner.sh >/dev/null && bash provisionner.sh >/dev/null && test $(grep -c '^appsvc:' etc/passwd.local) -eq 1 && echo PASS",
+                "expect": "PASS",
+                "label": "Le compte appsvc existe exactement une fois après deux exécutions"
+              },
+              {
+                "id": "cron-deux-lignes",
+                "type": "run",
+                "cmd": "bash provisionner.sh >/dev/null && test $(wc -l < etc/cron.d/shellforge) -eq 2 && echo PASS",
+                "expect": "PASS",
+                "label": "etc/cron.d/shellforge contient exactement deux tâches"
+              },
+              {
+                "id": "cron-contenu",
+                "type": "run",
+                "cmd": "bash provisionner.sh >/dev/null && test $(grep -c 'backup.sh' etc/cron.d/shellforge) -eq 1 && grep -q 'healthcheck.sh' etc/cron.d/shellforge && echo PASS",
+                "expect": "PASS",
+                "label": "Les deux tâches healthcheck et sauvegarde sont présentes une seule fois"
+              },
+              {
+                "id": "dossiers",
+                "type": "run",
+                "cmd": "bash provisionner.sh >/dev/null && test -d srv/app && test -d srv/logs && echo PASS",
+                "expect": "PASS",
+                "label": "Les répertoires applicatifs existent"
+              },
+              {
+                "id": "syntaxe",
+                "type": "run",
+                "cmd": "bash -n provisionner.sh && echo PASS",
+                "expect": "PASS",
+                "label": "Le script est syntaxiquement valide"
+              }
+            ],
+            "hints": [
+              "Réécrire entièrement etc/cron.d/shellforge avec cat <<'EOF' est plus simple que d'ajouter des lignes.",
+              "grep -qxF compare la ligne entière : c'est indispensable pour /etc/passwd."
+            ],
+            "solution": "cat > provisionner.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nmkdir -p srv/app srv/logs etc/cron.d\nentry='appsvc:x:1500:1500:App service:/srv/app:/usr/sbin/nologin'\ngrep -qxF \"$entry\" etc/passwd.local 2>/dev/null || echo \"$entry\" >> etc/passwd.local\ncat > etc/cron.d/shellforge <<'CRON'\n*/15 * * * * appsvc /srv/app/healthcheck.sh >> /srv/logs/health.log 2>&1\n0 2 * * * appsvc /srv/app/backup.sh >> /srv/logs/backup.log 2>&1\nCRON\nchmod 644 etc/cron.d/shellforge\necho 'provisionnement idempotent termine'\nBASH\nchmod +x provisionner.sh\n"
+          },
+          "remediation": "À l'échelle, remplace ces scripts par Ansible/Terraform : l'idempotence y est native et testable. Conserve néanmoins un script bash de secours documenté pour les urgences sans réseau."
+        }
+      ]
+    },
+    {
+      "id": "m05",
+      "title": "Diagnostic et durcissement des services",
+      "description": "Comprendre ce qui consomme la machine, identifier un processus malveillant, durcir une unité systemd.",
+      "category": "fiabilite",
+      "difficulty": "hard",
+      "missions": [
+        {
+          "id": "m05-01",
+          "title": "Machine saturée : diagnostic et remédiation",
+          "brief": "Le serveur rame, la charge explose. Trouve la cause, propose une remédiation sûre, automatise la surveillance.",
+          "difficulty": "hard",
+          "points": 230,
+          "estimated_minutes": 45,
+          "tags": [
+            "ps",
+            "load",
+            "mémoire",
+            "minage",
+            "réponse à incident"
+          ],
+          "objectives": [
+            "Lire un instantané de processus (CPU, mémoire)",
+            "Corréler charge, mémoire et processus",
+            "Écrire une remédiation réversible et un vérificateur"
+          ],
+          "lesson": {
+            "summary": "Une machine saturée est un puzzle de trois pièces : charge (loadavg), mémoire (MemAvailable) et processus (ps). Un processus de minage consomme du CPU sans trafic applicatif ; une fuite mémoire fait gonfler la swap. Le diagnostic doit citer des preuves, la remédiation doit être réversible.",
+            "sections": [
+              {
+                "id": "lecture",
+                "name": "Lire les indicateurs",
+                "content": "Un loadavg supérieur au nombre de cœurs indique une saturation CPU ou des I/O bloquantes. MemAvailable très bas + CPU élevé oriente vers une fuite ou une charge anormale. On compare toujours avec la ligne de base historique."
+              },
+              {
+                "id": "processus",
+                "name": "Traquer l'anomalie",
+                "content": "ps -eo pid,pcpu,pmem,cmd --sort=-pcpu classe par CPU. Un binaire inconnu au nom générique (xmrig, kdevtmpfsi) ou exécuté depuis /opt ou /tmp est un signal fort de compromission."
+              },
+              {
+                "id": "remediation",
+                "name": "Réagir sans casser",
+                "content": "kill -TERM laisse le processus se terminer proprement ; on n'utilise -9 qu'en dernier recours. On vérifie l'existence du PID (kill -0) avant d'agir, et on journalise l'action. Un mode simulation par défaut évite le drame sur une machine de production."
+              }
+            ],
+            "references": [
+              {
+                "command": "ps -eo pid,pcpu,pmem,cmd --sort=-pcpu",
+                "role": "Classer par CPU",
+                "example": "ps -eo pid,pcpu,pmem,cmd --sort=-pcpu | head -5"
+              },
+              {
+                "command": "kill -0 PID",
+                "role": "Vérifier l'existence d'un processus",
+                "example": "kill -0 1450 && echo vivant"
+              },
+              {
+                "command": "kill -TERM PID",
+                "role": "Arrêt propre",
+                "example": "kill -TERM 1450"
+              },
+              {
+                "command": "awk '$3>80'",
+                "role": "Filtrer sur une colonne",
+                "example": "awk 'NR>1 && $2>80 {print $1}' proc/ps.txt"
+              }
+            ],
+            "pitfalls": [
+              "Utiliser kill -9 immédiatement : on perd les traces et les fichiers ouverts.",
+              "Tuer un processus au hasard sans corréler ps et loadavg."
+            ]
+          },
+          "lab": {
+            "task": "Le dossier proc/ contient un instantané (ps.txt, loadavg, meminfo). Produis diagnostic.md (PID et commande du premier consommateur CPU, cause probable, indice de compromission), remediation.sh (simulation par défaut, --apply pour kill -TERM, refuse les PID absents) et verifier.sh (relit proc/ et sort en 2 si CPU > 80 % ou load > 10).",
+            "steps": [
+              "Trie ps.txt par CPU et compare avec loadavg/meminfo",
+              "Rédige diagnostic.md avec le PID 1450 et l'hypothèse de minage",
+              "Écris remediation.sh et verifier.sh puis exécute-les"
+            ],
+            "files": {
+              "proc/ps.txt": "PID  %CPU %MEM COMMAND\n1    0.0  0.1  /sbin/init\n812  0.2  1.4  /usr/sbin/nginx\n1450 94.3 8.2  /opt/.cache/xmrig --donate-level 1 --pool pool.example.test:3333\n1780 12.4 41.7 python3 /opt/app/worker.py\n1902 0.1  0.6  /usr/sbin/sshd\n",
+              "proc/loadavg": "18.42 14.10 9.80 3/312 1450\n",
+              "proc/meminfo": "MemTotal:        2048000 kB\nMemAvailable:     184320 kB\nSwapTotal:        524288 kB\nSwapFree:          10240 kB\n",
+              "logs/app.log": "INFO worker started\nWARN queue latency 8s\n"
+            },
+            "checks": [
+              {
+                "id": "diag-pid",
+                "type": "file_contains",
+                "path": "diagnostic.md",
+                "pattern": "1450",
+                "label": "diagnostic.md identifie le PID 1450"
+              },
+              {
+                "id": "diag-cause",
+                "type": "file_contains",
+                "path": "diagnostic.md",
+                "pattern": "(?i)(minage|mineur|miner|xmrig|crypto)",
+                "label": "La cause probable (minage de cryptomonnaie) est nommée"
+              },
+              {
+                "id": "rem-simulation",
+                "type": "run",
+                "cmd": "bash remediation.sh 1450 | grep -qiE '(simulation|absent)' && echo PASS",
+                "expect": "PASS",
+                "label": "remediation.sh simule l'arrêt (ou constate l'absence) sans agir"
+              },
+              {
+                "id": "rem-apply",
+                "type": "run",
+                "cmd": "bash remediation.sh --apply 1450 | grep -qiE '(absent|arrêt|arret|termin|introuvable)' && echo PASS",
+                "expect": "PASS",
+                "label": "Le mode --apply gère proprement un PID inexistant"
+              },
+              {
+                "id": "verifier-code",
+                "type": "run",
+                "cmd": "bash verifier.sh >/dev/null 2>&1; test $? -eq 2 && echo PASS",
+                "expect": "PASS",
+                "label": "verifier.sh sort en 2 quand les seuils sont dépassés"
+              }
+            ],
+            "hints": [
+              "Dans remediation.sh, teste kill -0 \"$pid\" 2>/dev/null avant d'envoyer le signal.",
+              "verifier.sh doit extraire le pourcentage CPU du champ 2 et la charge du champ 1."
+            ],
+            "solution": "cat > diagnostic.md <<'MD'\n# Diagnostic de saturation\n\n- Premier consommateur CPU : PID 1450 (/opt/.cache/xmrig --donate-level 1 --pool pool.example.test:3333), 94.3 % CPU.\n- Charge : 18.42 sur une machine a faible nombre de coeurs : saturation CPU confirmee.\n- Memoire : MemAvailable 184 Mo sur 2 Go, swap quasi epuisee.\n- Cause probable : minage de cryptomonnaie (xmrig) execute depuis un dossier cache, nom generique et connexion sortante vers un pool.\n- Indice de compromission : binaire inconnu hors gestion de paquets, execution depuis /opt/.cache, trafic sortant 3333/tcp.\nMD\ncat > remediation.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\napply=false\nargs=()\nfor a in \"$@\"; do\n  if [[ \"$a\" == \"--apply\" ]]; then apply=true; else args+=(\"$a\"); fi\ndone\npid=\"${args[0]:-}\"\nif [[ -z \"$pid\" ]]; then echo 'usage: remediation.sh [--apply] PID'; exit 1; fi\nif ! kill -0 \"$pid\" 2>/dev/null; then\n  echo \"PID $pid absent : rien a arreter\"\n  exit 0\nfi\nif $apply; then\n  kill -TERM \"$pid\" && echo \"[apply] kill -TERM $pid envoye\"\nelse\n  echo \"[simulation] kill -TERM $pid (relancer avec --apply)\"\nfi\nBASH\ncat > verifier.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ncpu=$(awk 'NR==3 {print $2}' proc/ps.txt)\nload=$(cut -d' ' -f1 proc/loadavg)\nawk -v c=\"$cpu\" -v l=\"$load\" 'BEGIN { exit (c>80 || l>10) ? 2 : 0 }'\nBASH\nchmod +x remediation.sh verifier.sh\nbash remediation.sh 1450\n"
+          },
+          "remediation": "En réponse à incident : isole la machine du réseau, conserve une copie mémoire, recherche la persistance (cron, systemd, ~/.bashrc), puis reconstruis depuis une image saine. Les en-têtes de détection (processus inconnu, connexion sortante 3333) sont plus utiles que la suppression du binaire."
+        },
+        {
+          "id": "m05-02",
+          "title": "Durcir une unité systemd et superviser",
+          "brief": "Ce service tourne en root sans aucune protection. Réécris-le pour un environnement hostile et pilote-le depuis un tableau de bord.",
+          "difficulty": "hard",
+          "points": 240,
+          "estimated_minutes": 45,
+          "tags": [
+            "systemd",
+            "sandboxing",
+            "NoNewPrivileges",
+            "supervision"
+          ],
+          "objectives": [
+            "Appliquer les directives de sandbox systemd",
+            "Réduire les privilèges et l'accès au système de fichiers",
+            "Produire un tableau de bord d'état des services"
+          ],
+          "lesson": {
+            "summary": "systemd n'est pas qu'un lanceur : c'est une couche de confinement. ProtectSystem=strict rend le système de fichiers en lecture seule, NoNewPrivileges empêche toute escalade via SUID, PrivateTmp isole /tmp, et ReadWritePaths ouvre uniquement les dossiers nécessaires.",
+            "sections": [
+              {
+                "id": "principe",
+                "name": "Moindre privilège, par défaut",
+                "content": "User=appsvc, Group=appsvc, NoNewPrivileges=yes et CapabilityBoundingSet= (vide) suppriment l'essentiel de la surface d'attaque. Une compromission applicative reste alors confinée."
+              },
+              {
+                "id": "fs",
+                "name": "Système de fichiers",
+                "content": "ProtectSystem=strict + ProtectHome=yes rendent /usr, /boot, /etc, /home en lecture seule. ReadWritePaths=/srv/app/data /srv/app/logs rouvre uniquement ce qui est nécessaire."
+              },
+              {
+                "id": "supervision",
+                "name": "Superviser",
+                "content": "Restart=on-failure avec RestartSec évite les boucles infinies. Côté exploitation, un script qui agrège l'état des unités détecte une panne silencieuse avant l'utilisateur."
+              }
+            ],
+            "references": [
+              {
+                "command": "systemctl cat app.service",
+                "role": "Inspecter une unité",
+                "example": "systemctl cat app.service"
+              },
+              {
+                "command": "systemd-analyze security app.service",
+                "role": "Noter le niveau de confinement",
+                "example": "systemd-analyze security app.service"
+              },
+              {
+                "command": "MemoryMax=512M",
+                "role": "Plafonner la mémoire",
+                "example": "MemoryMax=512M"
+              }
+            ],
+            "pitfalls": [
+              "Activer ProtectSystem=strict sans ReadWritePaths : l'application ne peut plus écrire et échoue au démarrage.",
+              "Laisser User=root par facilité : tout le modèle de sécurité est annulé."
+            ]
+          },
+          "lab": {
+            "task": "Produis etc/systemd/system/app.service.hardened : exécution sous appsvc, NoNewPrivileges, ProtectSystem=strict, ProtectHome, PrivateTmp, CapabilityBoundingSet vide, ReadWritePaths pour srv/app/data et srv/app/logs, Restart=on-failure + RestartSec=5, MemoryMax=512M. Ajoute supervision.md (contrôles) et health-dashboard.sh qui lit state/*.state et signale les services en échec.",
+            "steps": [
+              "Pars de l'unité actuelle et remplace User=root",
+              "Ajoute les directives de confinement une par une",
+              "Écris health-dashboard.sh puis vérifie la détection du service failed"
+            ],
+            "files": {
+              "etc/systemd/system/app.service": "[Unit]\nDescription=Shellforge app\nAfter=network.target\n\n[Service]\nExecStart=/usr/bin/python3 /srv/app/app.py\nRestart=always\nUser=root\n\n[Install]\nWantedBy=multi-user.target\n",
+              "state/app.state": "active\n",
+              "state/backup.state": "failed\n",
+              "state/redis.state": "active\n",
+              "srv/app/app.py": "print('shellforge app')\n",
+              "srv/app/data/.keep": "\n",
+              "srv/app/logs/.keep": "\n"
+            },
+            "dirs": [
+              "etc/systemd/system",
+              "state",
+              "srv/app/data",
+              "srv/app/logs"
+            ],
+            "checks": [
+              {
+                "id": "user-appsvc",
+                "type": "file_contains",
+                "path": "etc/systemd/system/app.service.hardened",
+                "pattern": "^User=appsvc$",
+                "label": "Le service tourne sous appsvc"
+              },
+              {
+                "id": "nnp",
+                "type": "file_contains",
+                "path": "etc/systemd/system/app.service.hardened",
+                "pattern": "^NoNewPrivileges=yes$",
+                "label": "NoNewPrivileges est activé"
+              },
+              {
+                "id": "protect",
+                "type": "file_contains",
+                "path": "etc/systemd/system/app.service.hardened",
+                "pattern": "^ProtectSystem=strict$",
+                "label": "ProtectSystem=strict est activé"
+              },
+              {
+                "id": "restart",
+                "type": "file_contains",
+                "path": "etc/systemd/system/app.service.hardened",
+                "pattern": "^Restart=on-failure$",
+                "label": "Le redémarrage est limité aux échecs"
+              },
+              {
+                "id": "pas-de-root",
+                "type": "file_not_contains",
+                "path": "etc/systemd/system/app.service.hardened",
+                "pattern": "^User=root$",
+                "label": "Aucune exécution en root"
+              },
+              {
+                "id": "dashboard",
+                "type": "run",
+                "cmd": "bash health-dashboard.sh | grep -qi 'failed' && echo PASS",
+                "expect": "PASS",
+                "label": "Le tableau de bord signale le service en échec"
+              }
+            ],
+            "hints": [
+              "CapabilityBoundingSet= (vide) supprime toutes les capacités : c'est volontaire et sûr pour une app Python.",
+              "ReadWritePaths accepte plusieurs chemins séparés par des espaces."
+            ],
+            "solution": "cat > etc/systemd/system/app.service.hardened <<'UNIT'\n[Unit]\nDescription=Shellforge app (durcie)\nAfter=network.target\n\n[Service]\nType=simple\nUser=appsvc\nGroup=appsvc\nExecStart=/usr/bin/python3 /srv/app/app.py\nRestart=on-failure\nRestartSec=5\nNoNewPrivileges=yes\nProtectSystem=strict\nProtectHome=yes\nPrivateTmp=yes\nPrivateDevices=yes\nProtectKernelTunables=yes\nProtectKernelModules=yes\nProtectControlGroups=yes\nRestrictAddressFamilies=AF_INET AF_INET6\nCapabilityBoundingSet=\nReadWritePaths=/srv/app/data /srv/app/logs\nMemoryMax=512M\n\n[Install]\nWantedBy=multi-user.target\nUNIT\ncat > health-dashboard.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nfor state_file in state/*.state; do\n  service=$(basename \"$state_file\" .state)\n  state=$(cat \"$state_file\")\n  if [[ \"$state\" == \"failed\" ]]; then\n    echo \"ALERTE $service : $state\"\n  else\n    echo \"OK $service : $state\"\n  fi\ndone\nBASH\ncat > supervision.md <<'MD'\n# Supervision du service\n\n- Etat des unites agrege par health-dashboard.sh (alerte si failed).\n- Redemarrage automatique limite aux echecs (Restart=on-failure, RestartSec=5).\n- Plafond memoire 512M pour eviter un OOM global.\n- Verification du confinement avec systemd-analyze security.\nMD\nchmod +x health-dashboard.sh\n"
+          },
+          "remediation": "Automatise la mesure avec systemd-analyze security et fixe un seuil d'exposition maximal en CI. En production, combine avec un profil AppArmor/SELinux pour couvrir ce que systemd ne voit pas."
+        }
+      ]
+    }
+  ]
+}

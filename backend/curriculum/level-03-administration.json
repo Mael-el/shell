@@ -1,0 +1,814 @@
+{
+  "level": 3,
+  "name": "Administration Linux",
+  "tagline": "Comptes, privilèges, chiffrement, réseau",
+  "description": "Les fondations de l'administration système : gérer les identités, contenir les privilèges, protéger les données au repos et maîtriser l'exposition réseau.",
+  "icon": "🛡️",
+  "accent": "#a78bfa",
+  "modules": [
+    {
+      "id": "m06",
+      "title": "Comptes, sudo et accès distant",
+      "description": "Gérer les identités, écrire une politique sudo minimale, durcir SSH et auditer les accès privilégiés.",
+      "category": "administration",
+      "difficulty": "medium",
+      "missions": [
+        {
+          "id": "m06-01",
+          "title": "Durcir les comptes et l'accès SSH",
+          "brief": "Le serveur accepte root en mot de passe et garde des comptes de service interactifs. Rends-le conforme à une politique d'accès stricte.",
+          "difficulty": "medium",
+          "points": 250,
+          "estimated_minutes": 45,
+          "tags": [
+            "passwd",
+            "sudoers",
+            "sshd_config",
+            "nologin"
+          ],
+          "objectives": [
+            "Désactiver les shells interactifs des comptes de service",
+            "Écrire une règle sudo au périmètre minimal",
+            "Durcir sshd_config sans se verrouiller dehors"
+          ],
+          "lesson": {
+            "summary": "Un serveur se protège d'abord par ses identités. Trois leviers : les comptes (shell nologin pour tout ce qui n'est pas humain), sudo (commandes explicites, jamais ALL), et SSH (clés uniquement, root interdit, utilisateurs autorisés explicités).",
+            "sections": [
+              {
+                "id": "comptes",
+                "name": "Comptes humains vs comptes de service",
+                "content": "Un compte de service n'a pas besoin de shell : /usr/sbin/nologin empêche toute connexion interactive. Un shell /bin/bash sur un compte applicatif est une porte d'entrée latérale après compromission."
+              },
+              {
+                "id": "sudo",
+                "name": "sudo au périmètre",
+                "content": "Une règle du type appsvc ALL=(root) NOPASSWD: /usr/bin/systemctl restart app limite l'action à une commande et un service. ALL=(ALL) NOPASSWD: ALL équivaut à root sans mot de passe, ce qui annule tout le reste."
+              },
+              {
+                "id": "ssh",
+                "name": "SSH : les trois réglages vitaux",
+                "content": "PermitRootLogin no, PasswordAuthentication no et MaxAuthTries 3 suppriment l'essentiel du brute force. AllowUsers restreint nominativement les comptes autorisés."
+              }
+            ],
+            "references": [
+              {
+                "command": "chsh -s /usr/sbin/nologin compte",
+                "role": "Désactiver un shell",
+                "example": "usermod -s /usr/sbin/nologin olddev"
+              },
+              {
+                "command": "visudo -c",
+                "role": "Valider la syntaxe sudoers",
+                "example": "visudo -c -f srv/etc/sudoers"
+              },
+              {
+                "command": "sshd -t",
+                "role": "Tester une configuration SSH",
+                "example": "sshd -t -f srv/etc/ssh/sshd_config.hardened"
+              }
+            ],
+            "pitfalls": [
+              "Changer PasswordAuthentication avant d'avoir installé les clés : on se coupe l'accès.",
+              "Oublier de valider la syntaxe sudoers : une erreur bloque sudo pour tout le monde."
+            ]
+          },
+          "lab": {
+            "task": "Produis srv/etc/passwd.clean (olddev et backup passent en /usr/sbin/nologin), srv/etc/sudoers.d/app (mode 440, appsvc peut seulement redémarrer le service app via systemctl), srv/etc/ssh/sshd_config.hardened (root interdit, mot de passe interdit, MaxAuthTries 3, X11Forwarding no) et audit-comptes.md listant les comptes UID 0 et les services non interactifs.",
+            "steps": [
+              "Inspecte passwd, sudoers et sshd_config",
+              "Écris les trois fichiers durcis en conservant les autres lignes utiles",
+              "Vérifie les modes avec stat et documente l'audit"
+            ],
+            "files": {
+              "srv/etc/passwd": "root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000:Student:/home/student:/bin/bash\nolddev:x:1001:1001:Ancien developpeur:/home/olddev:/bin/bash\nappsvc:x:1500:1500:App service:/srv/app:/usr/sbin/nologin\nbackup:x:1501:1501:Backup:/var/backups:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n",
+              "srv/etc/group": "root:x:0:\nstudent:x:1000:\nsudo:x:27:student,olddev\nappsvc:x:1500:\nbackup:x:1501:\ndocker:x:999:olddev\n",
+              "srv/etc/sudoers": "Defaults env_reset\nroot ALL=(ALL:ALL) ALL\n%sudo ALL=(ALL:ALL) ALL\n%dev ALL=(ALL) NOPASSWD: ALL\nappsvc ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart app\n",
+              "srv/etc/ssh/sshd_config": "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nMaxAuthTries 6\nX11Forwarding yes\nPermitEmptyPasswords no\n",
+              "srv/home/student/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDemoStudentKey student@laptop\n"
+            },
+            "dirs": [
+              "srv/etc/sudoers.d",
+              "srv/etc/ssh"
+            ],
+            "checks": [
+              {
+                "id": "nologin",
+                "type": "file_contains",
+                "path": "srv/etc/passwd.clean",
+                "pattern": "^olddev:.*:/usr/sbin/nologin$",
+                "label": "Le compte olddev n'a plus de shell interactif"
+              },
+              {
+                "id": "backup-nologin",
+                "type": "file_contains",
+                "path": "srv/etc/passwd.clean",
+                "pattern": "^backup:.*:/usr/sbin/nologin$",
+                "label": "Le compte backup n'a plus de shell interactif"
+              },
+              {
+                "id": "sudo-perimetre",
+                "type": "file_contains",
+                "path": "srv/etc/sudoers.d/app",
+                "pattern": "appsvc\\s+ALL=\\(root\\)\\s+NOPASSWD:\\s+/usr/bin/systemctl restart app",
+                "label": "La règle sudo est limitée à systemctl restart app"
+              },
+              {
+                "id": "sudo-mode",
+                "type": "run",
+                "cmd": "stat -c %a srv/etc/sudoers.d/app | grep -qx 440 && echo PASS",
+                "expect": "PASS",
+                "label": "Le fichier sudoers.d est en mode 440"
+              },
+              {
+                "id": "ssh-root",
+                "type": "file_contains",
+                "path": "srv/etc/ssh/sshd_config.hardened",
+                "pattern": "^PermitRootLogin no$",
+                "label": "La connexion root est interdite"
+              },
+              {
+                "id": "ssh-password",
+                "type": "file_not_contains",
+                "path": "srv/etc/ssh/sshd_config.hardened",
+                "pattern": "^PasswordAuthentication yes$",
+                "label": "L'authentification par mot de passe est désactivée"
+              },
+              {
+                "id": "audit-uid0",
+                "type": "file_contains",
+                "path": "audit-comptes.md",
+                "pattern": "root",
+                "label": "audit-comptes.md recense les comptes privilégiés"
+              }
+            ],
+            "hints": [
+              "Conserve les lignes utiles de sshd_config et remplace uniquement les directives concernées.",
+              "chmod 440 srv/etc/sudoers.d/app : sudo exige des droits minimaux sur ses fichiers."
+            ],
+            "solution": "sed 's|^\\(olddev:.*\\):/bin/bash$|\\1:/usr/sbin/nologin|; s|^\\(backup:.*\\):/bin/bash$|\\1:/usr/sbin/nologin|' srv/etc/passwd > srv/etc/passwd.clean\nprintf 'appsvc ALL=(root) NOPASSWD: /usr/bin/systemctl restart app\\n' > srv/etc/sudoers.d/app\nchmod 440 srv/etc/sudoers.d/app\ncat > srv/etc/ssh/sshd_config.hardened <<'EOF'\nPort 22\nPermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes\nMaxAuthTries 3\nX11Forwarding no\nPermitEmptyPasswords no\nEOF\nprintf '# Audit des comptes\\n\\n- UID 0 : root (seul compte privilegie attendu)\\n- Comptes non interactifs : appsvc, nobody, olddev, backup\\n- Action : retirer olddev et backup du groupe sudo\\n' > audit-comptes.md"
+          },
+          "remediation": "Versionne les configurations (/etc versionné ou Ansible), teste sshd -t avant rechargement et garde une session ouverte pendant le changement. Le moindre privilège SSH se mesure : aucun compte root distant, aucune clé orpheline."
+        },
+        {
+          "id": "m06-02",
+          "title": "Audit des accès privilégiés",
+          "brief": "Un audit révèle un UID 0 caché, des règles sudo totales et une clé SSH inconnue. Prouve-le, corrige-le, détecte-le.",
+          "difficulty": "hard",
+          "points": 270,
+          "estimated_minutes": 50,
+          "tags": [
+            "audit",
+            "sudo",
+            "authorized_keys",
+            "détection"
+          ],
+          "objectives": [
+            "Détecter un second compte UID 0",
+            "Identifier les règles sudo permettant une évasion",
+            "Corriger de façon idempotente et outiller la détection"
+          ],
+          "lesson": {
+            "summary": "Les accès privilégiés sont la cible n°1 d'un attaquant : un UID 0 supplémentaire est une porte dérobée permanente, un sudo trop large une escalade immédiate, une clé inconnue un accès persistant. L'audit doit produire des preuves et un script de correction rejouable.",
+            "sections": [
+              {
+                "id": "uid0",
+                "name": "Le piège de l'UID 0",
+                "content": "Sous Linux, les privilèges viennent de l'UID, pas du nom. Un compte nommé toor avec UID 0 est root avec un autre nom. On audite donc awk -F: '$3==0' /etc/passwd, pas seulement le mot « root »."
+              },
+              {
+                "id": "sudo",
+                "name": "Évasion par sudo",
+                "content": "Une règle autorisant find, tar, vi, less ou systemctl sans restriction permet souvent une évasion shell (GTFObins). La correction consiste à nommer la commande exacte et ses arguments, jamais un interpréteur."
+              },
+              {
+                "id": "cles",
+                "name": "Clés autorisées",
+                "content": "Chaque ligne d'authorized_keys est une identité permanente. On compare les empreintes (ssh-keygen -lf) à un inventaire, et toute clé inconnue est retirée après enquête."
+              }
+            ],
+            "references": [
+              {
+                "command": "awk -F: '$3==0' /etc/passwd",
+                "role": "Lister les UID 0",
+                "example": "awk -F: '$3==0 {print $1}' srv/etc/passwd"
+              },
+              {
+                "command": "grep -n 'NOPASSWD' /etc/sudoers",
+                "role": "Repérer les règles sans mot de passe",
+                "example": "grep -n 'NOPASSWD' srv/etc/sudoers"
+              },
+              {
+                "command": "ssh-keygen -lf authorized_keys",
+                "role": "Empreintes des clés autorisées",
+                "example": "ssh-keygen -lf srv/home/student/.ssh/authorized_keys"
+              }
+            ],
+            "pitfalls": [
+              "Chercher « root » au lieu de l'UID 0 : on rate tous les alias.",
+              "Corriger à la main sans script : la dérive revient au prochain déploiement."
+            ]
+          },
+          "lab": {
+            "task": "Produis audit-privileges.md (UID 0 surnuméraire, règles sudo dangereuses, clé inconnue, groupes sensibles), corrections.sh (simulation par défaut, --apply pour : commenter le compte UID 0 parallèle, écrire un sudoers minimal, retirer la clé backup-key) et detection.sh qui recherche ces trois motifs et affiche ALERTE.",
+            "steps": [
+              "Cherche les UID 0 et les règles NOPASSWD",
+              "Compare les clés autorisées à l'inventaire fourni",
+              "Écris corrections.sh idempotent puis vérifie après --apply"
+            ],
+            "files": {
+              "srv/etc/passwd": "root:x:0:0:root:/root:/bin/bash\ntoor:x:0:0:backdoor:/root:/bin/bash\nstudent:x:1000:1000:Student:/home/student:/bin/bash\nappsvc:x:1500:1500:App service:/srv/app:/usr/sbin/nologin\n",
+              "srv/etc/group": "root:x:0:\nstudent:x:1000:\nsudo:x:27:student\nappsvc:x:1500:\ndocker:x:999:student\n",
+              "srv/etc/sudoers": "Defaults env_reset\nroot ALL=(ALL:ALL) ALL\n%sudo ALL=(ALL:ALL) ALL\nstudent ALL=(ALL) NOPASSWD: /usr/bin/find, /usr/bin/tar, /usr/bin/less\n",
+              "srv/home/student/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDemoStudentKey student@laptop\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDemoUnknownKey backup-key@unknown-host\n",
+              "srv/inventaire-cles.txt": "student@laptop\n",
+              "srv/etc/sudoers.d/README": "Les regles locales doivent etre deposees ici en mode 440.\n"
+            },
+            "dirs": [
+              "srv/etc/sudoers.d",
+              "srv/home/student/.ssh"
+            ],
+            "checks": [
+              {
+                "id": "audit-uid0",
+                "type": "file_contains",
+                "path": "audit-privileges.md",
+                "pattern": "toor",
+                "label": "L'UID 0 surnuméraire (toor) est identifié"
+              },
+              {
+                "id": "audit-sudo",
+                "type": "file_contains",
+                "path": "audit-privileges.md",
+                "pattern": "(?i)NOPASSWD",
+                "label": "Les règles sudo dangereuses sont documentées"
+              },
+              {
+                "id": "correction-uid0",
+                "type": "run",
+                "cmd": "bash corrections.sh --apply >/dev/null && test $(awk -F: '$3==0 && $1!~/^#/' srv/etc/passwd | wc -l) -eq 1 && echo PASS",
+                "expect": "PASS",
+                "label": "Après correction, un seul compte UID 0 actif subsiste"
+              },
+              {
+                "id": "correction-cle",
+                "type": "run",
+                "cmd": "bash corrections.sh --apply >/dev/null && ! grep -q 'backup-key' srv/home/student/.ssh/authorized_keys && echo PASS",
+                "expect": "PASS",
+                "label": "La clé inconnue est retirée et les autres conservées"
+              },
+              {
+                "id": "detection",
+                "type": "run",
+                "cmd": "bash -n detection.sh && bash detection.sh | grep -qi 'alerte' && echo PASS",
+                "expect": "PASS",
+                "label": "detection.sh signale au moins une alerte"
+              }
+            ],
+            "hints": [
+              "Pour neutraliser toor sans casser le fichier : préfixer la ligne par # plutôt que la supprimer.",
+              "Idempotence : grep -q avant chaque modification, et écris le sudoers minimal en entier."
+            ],
+            "solution": "cat > audit-privileges.md <<'MD'\n# Audit des acces privilegies\n\n## 1. UID 0 surnumeraire (critique)\nLe compte toor possede l'UID 0 : c'est un root bis, sans tracabilite. Correction : neutraliser la ligne (prefixe #) apres verification.\n\n## 2. Sudo trop large (critique)\nstudent peut executer sans mot de passe /usr/bin/find, /usr/bin/tar et /usr/bin/less en tant que root (NOPASSWD). GTFObins documente une evasion shell immediate pour ces trois binaires. Correction : limiter a une commande precise et ses arguments.\n\n## 3. Cle SSH inconnue (elevee)\nUne cle etiquetee backup-key@unknown-host est presente dans authorized_keys de student mais absente de l'inventaire srv/inventaire-cles.txt. Correction : retirer la cle apres enquete.\n\n## 4. Groupes sensibles (moyenne)\nstudent est membre de sudo et docker ; l'appartenance a docker equivaut a root. A verifier et documenter.\nMD\ncat > corrections.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\napply=false\n[[ \"${1:-}\" == \"--apply\" ]] && apply=true\nrun() { if $apply; then eval \"$1\"; else echo \"[simulation] $1\"; fi; }\nrun \"sed -i '/^toor:/s/^/#/' srv/etc/passwd\"\nrun \"printf 'root ALL=(ALL:ALL) ALL\\n%sudo ALL=(ALL:ALL) ALL\\nstudent ALL=(ALL) NOPASSWD: /usr/bin/systemctl status app\\n' > srv/etc/sudoers\"\nrun \"sed -i '/backup-key/d' srv/home/student/.ssh/authorized_keys\"\necho 'corrections appliquees'\nBASH\ncat > detection.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nawk -F: '$3==0 {print \"ALERTE UID 0 : \" $1}' srv/etc/passwd\ngrep -q 'NOPASSWD' srv/etc/sudoers && echo \"ALERTE regle sudo NOPASSWD\"\ngrep -q 'backup-key' srv/home/student/.ssh/authorized_keys 2>/dev/null && echo \"ALERTE cle ssh inconnue\"\nBASH\nchmod +x corrections.sh detection.sh\n"
+          },
+          "remediation": "Branche cet audit sur une détection continue : alerte sur création d'UID 0, sur modification de sudoers, et sur ajout de clé. Côté prévention, centralise les accès (SSO, clés à durée de vie courte) et supprime les comptes partagés."
+        }
+      ]
+    },
+    {
+      "id": "m07",
+      "title": "Privilèges et données au repos",
+      "description": "SUID, umask, bits spéciaux, chiffrement des données sensibles et gestion de clés.",
+      "category": "administration",
+      "difficulty": "medium",
+      "missions": [
+        {
+          "id": "m07-01",
+          "title": "Permissions spéciales : SUID, SGID, sticky et umask",
+          "brief": "Un dossier de dépôt est en 777, un binaire porte le SUID et les nouvelles arborescences naissent trop ouvertes. Reprends le contrôle.",
+          "difficulty": "medium",
+          "points": 260,
+          "estimated_minutes": 40,
+          "tags": [
+            "chmod",
+            "setgid",
+            "sticky",
+            "umask",
+            "SUID"
+          ],
+          "objectives": [
+            "Appliquer SGID sur un dossier de dépôt collaboratif",
+            "Utiliser le sticky bit sur un dossier temporaire partagé",
+            "Configurer umask 027 par défaut"
+          ],
+          "lesson": {
+            "summary": "Les bits spéciaux ne sont pas des curiosités : SGID sur un dossier garantit l'héritage du groupe, sticky empêche la suppression des fichiers d'autrui, et umask fixe les droits par défaut de tout ce qui est créé par un utilisateur.",
+            "sections": [
+              {
+                "id": "sgid",
+                "name": "SGID sur dossier",
+                "content": "chmod 2770 dossier : les nouveaux fichiers héritent du groupe du dossier, ce qui évite les mélanges de groupes dans un espace collaboratif. Les « autres » n'ont aucun droit."
+              },
+              {
+                "id": "sticky",
+                "name": "Sticky bit",
+                "content": "chmod 1777 /tmp : tout le monde peut écrire, mais seul le propriétaire (ou root) peut supprimer son fichier. Sans sticky, un utilisateur peut effacer les fichiers des autres."
+              },
+              {
+                "id": "umask",
+                "name": "umask par défaut",
+                "content": "umask 027 retire l'écriture au groupe et tous les droits aux autres : les fichiers naissent en 640 et les dossiers en 750. À placer dans /etc/profile.d pour être systématique."
+              }
+            ],
+            "references": [
+              {
+                "command": "chmod 2770 dossier",
+                "role": "SGID + groupe",
+                "example": "chmod 2770 srv/srv/app/uploads"
+              },
+              {
+                "command": "chmod 1777 dossier",
+                "role": "Sticky bit",
+                "example": "chmod 1777 srv/srv/app/tmp"
+              },
+              {
+                "command": "umask 027",
+                "role": "Droits par défaut restrictifs",
+                "example": "echo 'umask 027' > srv/etc/profile.d/umask.sh"
+              }
+            ],
+            "pitfalls": [
+              "Mettre 777 sur un dossier de dépôt : n'importe quel compte peut lire et remplacer les fichiers.",
+              "Confondre 750 et 2750 : sans SGID, le groupe des fichiers créés peut être le groupe primaire de l'utilisateur."
+            ]
+          },
+          "lab": {
+            "task": "Dans srv/ : passe srv/app/uploads en 2770, srv/app/tmp en 1777, build.sh en 750, retire le SUID de usr/local/bin/suidtool, mets la clé privée en 600, crée etc/profile.d/umask.sh avec umask 027 et produis audit-modes.txt (chemin + mode final) pour les cinq entrées.",
+            "steps": [
+              "Relève les modes initiaux avec stat",
+              "Applique les cinq corrections",
+              "Génère audit-modes.txt et confirme l'absence de SUID et de fichiers world-writable"
+            ],
+            "files": {
+              "srv/srv/app/uploads/.keep": "\n",
+              "srv/srv/app/tmp/.keep": "\n",
+              "srv/opt/scripts/build.sh": "#!/usr/bin/env bash\necho build\n",
+              "srv/usr/local/bin/suidtool": "#!/bin/sh\nid\n",
+              "srv/home/student/.ssh/id_ed25519": "-----BEGIN OPENSSH PRIVATE KEY-----\nZGVtbw==\n-----END OPENSSH PRIVATE KEY-----\n",
+              "srv/etc/profile.d/README": "Deposer ici les scripts de profil systeme.\n"
+            },
+            "dirs": [
+              "srv/srv/app/uploads",
+              "srv/srv/app/tmp",
+              "srv/etc/profile.d"
+            ],
+            "modes": {
+              "srv/srv/app/uploads": "0777",
+              "srv/srv/app/tmp": "0777",
+              "srv/opt/scripts/build.sh": "0666",
+              "srv/usr/local/bin/suidtool": "4755",
+              "srv/home/student/.ssh/id_ed25519": "0644"
+            },
+            "checks": [
+              {
+                "id": "uploads-2770",
+                "type": "run",
+                "cmd": "stat -c %a srv/srv/app/uploads | grep -qx 2770 && echo PASS",
+                "expect": "PASS",
+                "label": "uploads est en 2770 (SGID, sans accès autres)"
+              },
+              {
+                "id": "tmp-sticky",
+                "type": "run",
+                "cmd": "stat -c %a srv/srv/app/tmp | grep -qx 1777 && echo PASS",
+                "expect": "PASS",
+                "label": "Le dossier temporaire porte le sticky bit"
+              },
+              {
+                "id": "build-750",
+                "type": "run",
+                "cmd": "stat -c %a srv/opt/scripts/build.sh | grep -qx 750 && echo PASS",
+                "expect": "PASS",
+                "label": "build.sh est en 750"
+              },
+              {
+                "id": "suid-retire",
+                "type": "run",
+                "cmd": "test -z \"$(find srv -perm -4000 -type f)\" && echo PASS",
+                "expect": "PASS",
+                "label": "Plus aucun SUID"
+              },
+              {
+                "id": "cle-600",
+                "type": "run",
+                "cmd": "stat -c %a srv/home/student/.ssh/id_ed25519 | grep -qx 600 && echo PASS",
+                "expect": "PASS",
+                "label": "La clé privée est en 600"
+              },
+              {
+                "id": "umask",
+                "type": "file_contains",
+                "path": "srv/etc/profile.d/umask.sh",
+                "pattern": "umask 0?27",
+                "label": "umask 027 est configuré globalement"
+              },
+              {
+                "id": "audit-modes",
+                "type": "run",
+                "cmd": "test $(wc -l < audit-modes.txt) -eq 5 && grep -q 2770 audit-modes.txt && echo PASS",
+                "expect": "PASS",
+                "label": "audit-modes.txt documente les cinq entrées"
+              }
+            ],
+            "hints": [
+              "chmod 2770 et chmod g+s font la même chose : le premier chiffre encode le bit spécial.",
+              "stat -c '%n %a' affiche chemin et mode : parfait pour un audit trié."
+            ],
+            "solution": "chmod 2770 srv/srv/app/uploads\nchmod 1777 srv/srv/app/tmp\nchmod 750 srv/opt/scripts/build.sh\nchmod 0755 srv/usr/local/bin/suidtool\nchmod 600 srv/home/student/.ssh/id_ed25519\nprintf 'umask 027\\n' > srv/etc/profile.d/umask.sh\nfor f in srv/srv/app/uploads srv/srv/app/tmp srv/opt/scripts/build.sh srv/usr/local/bin/suidtool srv/home/student/.ssh/id_ed25519; do stat -c '%n %a' \"$f\"; done | sed 's|srv/||' | sort > audit-modes.txt"
+          },
+          "remediation": "Déploie umask via un profil centralisé (pam_umask, /etc/login.defs) et surveille les changements de mode par FIM. Un dossier de dépôt doit toujours être SGID + sticky si plusieurs utilisateurs y écrivent."
+        },
+        {
+          "id": "m07-02",
+          "title": "Chiffrement au repos et rotation de secrets",
+          "brief": "Un dump de base et un fichier d'environnement traînent en clair. Chiffre, vérifie et documente la gestion des clés.",
+          "difficulty": "hard",
+          "points": 280,
+          "estimated_minutes": 45,
+          "tags": [
+            "openssl",
+            "chiffrement",
+            "sha256",
+            "secrets"
+          ],
+          "objectives": [
+            "Chiffrer un fichier avec AES-256 et dérivation de clé",
+            "Vérifier l'intégrité avant et après déchiffrement",
+            "Rédiger une politique de rotation des secrets"
+          ],
+          "lesson": {
+            "summary": "Un secret en clair sur disque est un incident en attente : sauvegardes, images de conteneurs et dumps le recopient partout. Le chiffrement au repos impose une dérivation de clé robuste (pbkdf2), une vérification d'intégrité (SHA-256) et une procédure de rotation écrite.",
+            "sections": [
+              {
+                "id": "chiffrement",
+                "name": "openssl, les bons drapeaux",
+                "content": "openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in clair -out chiffre -pass file:passphrase. Le salt empêche les attaques par dictionnaire précalculé, pbkdf2 ralentit le brute force."
+              },
+              {
+                "id": "integrite",
+                "name": "Prouver, pas supposer",
+                "content": "On calcule le SHA-256 du clair avant suppression, puis on déchiffre dans un dossier temporaire pour comparer. Un chiffrement non testé est un faux sentiment de sécurité."
+              },
+              {
+                "id": "rotation",
+                "name": "Cycle de vie des secrets",
+                "content": "Tout secret a un propriétaire, une date de création, une durée de vie et une procédure de rotation. 90 jours est un standard courant ; une compromission impose une rotation immédiate."
+              }
+            ],
+            "references": [
+              {
+                "command": "openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt",
+                "role": "Chiffrer",
+                "example": "openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in secrets/dump.sql -out coffre/dump.sql.enc -pass file:coffre/passphrase"
+              },
+              {
+                "command": "openssl enc -d -aes-256-cbc -pbkdf2",
+                "role": "Déchiffrer",
+                "example": "openssl enc -d -aes-256-cbc -pbkdf2 -in coffre/dump.sql.enc -out /tmp/dump.sql -pass file:coffre/passphrase"
+              },
+              {
+                "command": "sha256sum fichier",
+                "role": "Empreinte d'intégrité",
+                "example": "sha256sum secrets/dump.sql"
+              }
+            ],
+            "pitfalls": [
+              "Chiffrer sans -pbkdf2 : openssl avertit et la dérivation est obsolète.",
+              "Stocker la passphrase à côté du fichier chiffré sans contrôle d'accès (mode 700 minimum sur le dossier)."
+            ]
+          },
+          "lab": {
+            "task": "Chiffre secrets/dump.sql vers coffre/dump.sql.enc (AES-256-CBC + pbkdf2, passphrase dans coffre/passphrase en 600, dossier coffre en 700), supprime le clair, consigne le SHA-256 du clair dans coffre/checksums.txt, écris verifier-chiffrement.sh qui déchiffre dans un temporaire, compare l'empreinte et affiche OK/KO, puis chiffrement.md (algorithme, gestion des clés, rotation 90 jours).",
+            "steps": [
+              "Crée coffre/ en 700 et la passphrase en 600",
+              "Calcule l'empreinte du clair puis chiffre",
+              "Supprime le clair et écris le script de vérification"
+            ],
+            "files": {
+              "secrets/dump.sql": "INSERT INTO clients (id, email) VALUES (1, 'alice@example.com');\nINSERT INTO clients (id, email) VALUES (2, 'bob@example.com');\n",
+              "secrets/app.env": "DB_PASSWORD=Zx9!shellforge2025\nAPI_KEY=2f8b1c9d4e6a7b3c5d7e9f1a\n",
+              "docs/politique.md": "# Politique de protection des donnees\n\nLes dumps de production ne doivent jamais rester en clair sur disque.\n"
+            },
+            "checks": [
+              {
+                "id": "chiffre",
+                "type": "file_exists",
+                "path": "coffre/dump.sql.enc",
+                "label": "L'archive chiffrée coffre/dump.sql.enc existe"
+              },
+              {
+                "id": "clair-supprime",
+                "type": "run",
+                "cmd": "test ! -f secrets/dump.sql && echo PASS",
+                "expect": "PASS",
+                "label": "Le fichier en clair a été supprimé"
+              },
+              {
+                "id": "coffre-700",
+                "type": "run",
+                "cmd": "stat -c %a coffre | grep -qx 700 && echo PASS",
+                "expect": "PASS",
+                "label": "Le dossier du coffre est en 700"
+              },
+              {
+                "id": "empreinte",
+                "type": "run",
+                "cmd": "grep -q 'sha256' coffre/checksums.txt && echo PASS",
+                "expect": "PASS",
+                "label": "L'empreinte d'intégrité est consignée"
+              },
+              {
+                "id": "verification",
+                "type": "run",
+                "cmd": "bash verifier-chiffrement.sh | grep -q 'OK' && echo PASS",
+                "expect": "PASS",
+                "label": "Le script déchiffre et vérifie l'intégrité (OK)"
+              },
+              {
+                "id": "rotation",
+                "type": "file_contains",
+                "path": "chiffrement.md",
+                "pattern": "(?i)rotation",
+                "label": "La politique de rotation est documentée"
+              }
+            ],
+            "hints": [
+              "Calcule le SHA-256 du clair AVANT de le supprimer.",
+              "Ajoute -pbkdf2 -iter 100000 à openssl enc, sinon la dérivation par défaut est faible."
+            ],
+            "solution": "mkdir -p coffre && chmod 700 coffre\nhead -c 32 /dev/urandom | base64 > coffre/passphrase && chmod 600 coffre/passphrase\nprintf 'sha256 %s  secrets/dump.sql\\n' \"$(sha256sum secrets/dump.sql | cut -d' ' -f1)\" > coffre/checksums.txt\nopenssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in secrets/dump.sql -out coffre/dump.sql.enc -pass file:coffre/passphrase\nrm -f secrets/dump.sql\ncat > verifier-chiffrement.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ntmp=$(mktemp)\ntrap 'rm -f \"$tmp\"' EXIT\nopenssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in coffre/dump.sql.enc -out \"$tmp\" -pass file:coffre/passphrase\nexpected=$(awk '/sha256/ {print $2}' coffre/checksums.txt)\nactual=$(sha256sum \"$tmp\" | cut -d' ' -f1)\nif [[ \"$expected\" == \"$actual\" ]]; then echo OK; else echo KO; exit 1; fi\nBASH\ncat > chiffrement.md <<'MD'\n# Chiffrement au repos\n\n- Algorithme : AES-256-CBC avec PBKDF2 (100 000 iterations) et salt aleatoire.\n- Cle : fichier coffre/passphrase en 600, dossier coffre en 700.\n- Integrite : SHA-256 du clair consigne dans coffre/checksums.txt et verifie apres dechiffrement.\n- Rotation : tous les 90 jours, ou immediatement en cas de suspicion de compromission.\n- Interdit : secret en clair dans git, une image de conteneur ou une sauvegarde.\nMD\nchmod +x verifier-chiffrement.sh\n"
+          },
+          "remediation": "À l'échelle, utilise un KMS (Vault, AWS KMS, SOPS+age) plutôt qu'une passphrase locale. La clé de chiffrement doit être séparée de la donnée et auditée : qui l'a lue, quand, pourquoi."
+        }
+      ]
+    },
+    {
+      "id": "m08",
+      "title": "Réseau et filtrage",
+      "description": "Lire l'exposition réelle d'un serveur, diagnostiquer le DNS et écrire un pare-feu minimal vérifiable.",
+      "category": "administration",
+      "difficulty": "hard",
+      "missions": [
+        {
+          "id": "m08-01",
+          "title": "Exposition réseau et diagnostic DNS",
+          "brief": "Un serveur expose Redis et RDP à Internet sans que personne ne l'ait décidé. Prouve-le et outille le contrôle.",
+          "difficulty": "hard",
+          "points": 290,
+          "estimated_minutes": 45,
+          "tags": [
+            "ss",
+            "ports",
+            "dns",
+            "exposition"
+          ],
+          "objectives": [
+            "Distinguer une écoute locale d'une écoute publique",
+            "Confronter l'exposition à une liste d'autorisation",
+            "Diagnostiquer une résolution DNS défaillante"
+          ],
+          "lesson": {
+            "summary": "Le seul inventaire qui compte est celui des sockets en écoute, croisé avec la politique d'exposition. 0.0.0.0:6379 est joignable depuis Internet, 127.0.0.1:5432 ne l'est pas. Cette distinction est la base de toute revue de surface d'attaque.",
+            "sections": [
+              {
+                "id": "lecture",
+                "name": "Lire ss -lnt",
+                "content": "La colonne Local Address:Port indique l'interface d'écoute. 0.0.0.0 ou :: signifie toutes les interfaces (donc exposé), 127.0.0.1 ou ::1 signifie local uniquement. Le nom du processus est donné par la colonne Process, par exemple users:((redis,pid=901))."
+              },
+              {
+                "id": "politique",
+                "name": "Liste d'autorisation",
+                "content": "Exposer un port n'est pas une faute en soi : c'est l'écart entre l'exposition réelle et l'exposition décidée qui compte. On compare donc les ports publics à un fichier services.csv validé."
+              },
+              {
+                "id": "dns",
+                "name": "DNS",
+                "content": "Une résolution qui échoue produit des erreurs applicatives trompeuses. Vérifie les entrées /etc/hosts, les nameservers et la cohérence des noms internes avant de suspecter l'application."
+              }
+            ],
+            "references": [
+              {
+                "command": "ss -lntp",
+                "role": "Ports en écoute avec processus",
+                "example": "ss -lntp | grep LISTEN"
+              },
+              {
+                "command": "getent hosts nom",
+                "role": "Résolution système",
+                "example": "getent hosts db.shellforge.test"
+              },
+              {
+                "command": "grep -v '127.0.0.1'",
+                "role": "Filtrer les écoutes locales",
+                "example": "grep LISTEN net/ss.txt | grep -v '127.0.0.1'"
+              }
+            ],
+            "pitfalls": [
+              "Confondre port en écoute et port joignable depuis Internet (le pare-feu peut filtrer).",
+              "Oublier les écoute IPv6 : [::]:6379 est aussi public."
+            ]
+          },
+          "lab": {
+            "task": "Analyse net/ss.txt face à net/services.csv (ports autorisés). Produis exposition.md (ports publics, service, risque, et mention explicite que 5432 reste local), reseau.sh qui liste les ports publics non autorisés, dns-verif.sh qui vérifie db.shellforge.test et cache.shellforge.test via net/hosts.txt et alerte pour le nom absent.",
+            "steps": [
+              "Extrais les écoutes publiques (hors 127.0.0.1 et ::1)",
+              "Croise avec services.csv pour trouver les écarts",
+              "Écris les deux scripts et vérifie leurs sorties"
+            ],
+            "files": {
+              "net/ss.txt": "Netid State  Local Address:Port  Peer Address:Port Process\ntcp   LISTEN 0.0.0.0:22          0.0.0.0:*         users:((\"sshd\",pid=812,fd=3))\ntcp   LISTEN 127.0.0.1:5432      0.0.0.0:*         users:((\"postgres\",pid=900,fd=5))\ntcp   LISTEN 0.0.0.0:6379        0.0.0.0:*         users:((\"redis\",pid=901,fd=6))\ntcp   LISTEN 0.0.0.0:80          0.0.0.0:*         users:((\"nginx\",pid=812,fd=6))\ntcp   LISTEN 0.0.0.0:3389        0.0.0.0:*         users:((\"xrdp\",pid=950,fd=7))\n",
+              "net/services.csv": "service,port,exposition\nssh,22,publique\nhttp,80,publique\nhttps,443,publique\npostgres,5432,locale\nredis,6379,locale\nrdp,3389,aucune\n",
+              "net/hosts.txt": "192.0.2.10 db.shellforge.test\n192.0.2.11 docs.shellforge.test\n",
+              "net/resolv.conf": "nameserver 10.0.0.53\nsearch shellforge.test\n"
+            },
+            "checks": [
+              {
+                "id": "expo-redis",
+                "type": "run",
+                "cmd": "grep -q '6379' exposition.md && grep -q '3389' exposition.md && echo PASS",
+                "label": "Les ports 6379 et 3389 sont identifiés comme exposés",
+                "expect": "PASS"
+              },
+              {
+                "id": "expo-local",
+                "type": "file_contains",
+                "path": "exposition.md",
+                "pattern": "(?i)(127\\.0\\.0\\.1|loopback|locale).*5432|5432.*(local|loopback)",
+                "label": "Le port 5432 est identifié comme local uniquement"
+              },
+              {
+                "id": "script-ecarts",
+                "type": "run",
+                "cmd": "bash reseau.sh | grep -q '6379' && bash reseau.sh | grep -q '3389' && ! bash reseau.sh | grep -q '^22' && echo PASS",
+                "expect": "PASS",
+                "label": "reseau.sh liste uniquement les écarts (6379, 3389)"
+              },
+              {
+                "id": "dns-alerte",
+                "type": "run",
+                "cmd": "bash dns-verif.sh | grep -qiE '(absent|inconnu|introuvable)' && echo PASS",
+                "expect": "PASS",
+                "label": "dns-verif.sh alerte sur le nom cache.shellforge.test absent"
+              },
+              {
+                "id": "syntaxe",
+                "type": "run",
+                "cmd": "bash -n reseau.sh && bash -n dns-verif.sh && echo PASS",
+                "expect": "PASS",
+                "label": "Les deux scripts sont syntaxiquement valides"
+              }
+            ],
+            "hints": [
+              "awk '$4 ~ /^(0\\.0\\.0\\.0|\\[::\\])/ {print $4}' net/ss.txt isole les écoutes publiques.",
+              "dns-verif.sh compare chaque nom recherché aux entrées de net/hosts.txt."
+            ],
+            "solution": "cat > reseau.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nautorises=$(awk -F, 'NR>1 && $3==\"publique\" {print $2}' net/services.csv)\nfor port in $(awk '$2==\"LISTEN\" {split($3,a,\":\"); print a[length(a)]}' net/ss.txt | sort -u); do\n  if ! printf '%s\\n' \"$autorises\" | grep -qx \"$port\"; then\n    echo \"EXPOSE NON AUTORISE port $port\"\n  fi\ndone\nBASH\ncat > dns-verif.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nfor nom in db.shellforge.test cache.shellforge.test; do\n  if grep -qE \"[[:space:]]${nom}$\" net/hosts.txt; then echo \"OK $nom\"; else echo \"ABSENT $nom\"; fi\ndone\nBASH\ncat > exposition.md <<'MD'\n# Exposition reseau\n\n| Port | Ecoute | Service | Statut |\n|------|--------|---------|--------|\n| 22 | 0.0.0.0 | sshd | autorise (publique) |\n| 80 | 0.0.0.0 | nginx | autorise (publique) |\n| 6379 | 0.0.0.0 | redis | EXPOSE NON AUTORISE - aucune authentification, risque de compromission totale |\n| 3389 | 0.0.0.0 | xrdp | EXPOSE NON AUTORISE - surface d'attaque distante |\n| 5432 | 127.0.0.1 | postgres | OK, ecoute uniquement en local (loopback) |\n\nLe port 5432 n'est pas joignable depuis l'exterieur : il reste sur l'interface loopback.\nRecommandation : restreindre redis et rdp a 127.0.0.1 ou les fermer, puis filtrer en amont.\nMD\nchmod +x reseau.sh dns-verif.sh\n"
+          },
+          "remediation": "Ferme les écoutes inutiles, déplace les services internes sur loopback, et filtre en amont (pare-feu + security groups). Mesure en continu : scan mensuel externe et comparaison à l'inventaire autorisé."
+        },
+        {
+          "id": "m08-02",
+          "title": "Pare-feu nftables : exposition minimale",
+          "brief": "Le pare-feu accepte tout par défaut. Écris une politique « deny by default » et prouve-la avec un vérificateur.",
+          "difficulty": "hard",
+          "points": 300,
+          "estimated_minutes": 50,
+          "tags": [
+            "nftables",
+            "filtrage",
+            "deny by default",
+            "plan de remédiation"
+          ],
+          "objectives": [
+            "Écrire un ensemble de règles nftables lisible",
+            "Appliquer le moindre privilège réseau",
+            "Automatiser la vérification de la politique"
+          ],
+          "lesson": {
+            "summary": "Un pare-feu se conçoit à partir d'une politique, pas d'une liste de trous. La mécanique : policy drop sur input/forward, accepter les connexions établies, autoriser loopback, puis n'ouvrir que les flux explicitement décidés, avec restriction de source quand c'est possible.",
+            "sections": [
+              {
+                "id": "principe",
+                "name": "Deny by default",
+                "content": "policy drop + ct state established,related accept : rien n'entre sans règle, mais les réponses aux connexions sortantes passent. C'est le socle de tout filtrage sain."
+              },
+              {
+                "id": "regles",
+                "name": "Nommer les flux",
+                "content": "tcp dport 22 ip saddr 10.8.0.0/24 accept limite SSH au réseau d'administration. tcp dport { 80, 443 } accept ouvre le web. Un service interne comme PostgreSQL ou Redis reste en 127.0.0.1, sans règle d'ouverture."
+              },
+              {
+                "id": "verif",
+                "name": "Vérifier la politique",
+                "content": "nft -c -f fichier teste la syntaxe sans appliquer. Un script de contrôle vérifie la présence de policy drop, l'absence d'ouverture pour les ports interdits (3389, 6379) et l'acceptation des connexions établies."
+              }
+            ],
+            "references": [
+              {
+                "command": "nft -c -f ruleset.nft",
+                "role": "Valider sans appliquer",
+                "example": "nft -c -f etc/nftables.hardened.conf"
+              },
+              {
+                "command": "ct state established,related accept",
+                "role": "Autoriser les réponses",
+                "example": "ct state established,related accept"
+              },
+              {
+                "command": "ip saddr 10.8.0.0/24",
+                "role": "Restreindre la source",
+                "example": "tcp dport 22 ip saddr 10.8.0.0/24 accept"
+              }
+            ],
+            "pitfalls": [
+              "Oublier la règle established : toutes les connexions sortantes se bloquent.",
+              "Ouvrir 3389 « temporairement » : c'est ainsi qu'on garde un RDP exposé pendant trois ans."
+            ]
+          },
+          "lab": {
+            "task": "Écris etc/nftables.hardened.conf (policy drop sur input et forward, accept output, loopback, established/related, SSH restreint à 10.8.0.0/24, HTTP/HTTPS publics, PostgreSQL uniquement depuis 127.0.0.1, AUCUNE ouverture pour 6379 et 3389), plan-filtrage.md justifiant chaque flux, et verifier-regles.sh qui affiche OK si la politique est conforme, KO sinon.",
+            "steps": [
+              "Pars du fichier permissif fourni et reprends la structure",
+              "Ajoute les règles flux par flux en respectant les sources",
+              "Écris verifier-regles.sh et compare avec plan-filtrage.md"
+            ],
+            "files": {
+              "etc/nftables.conf": "table inet filter {\n  chain input {\n    type filter hook input priority 0; policy accept;\n  }\n  chain forward {\n    type filter hook forward priority 0; policy accept;\n  }\n  chain output {\n    type filter hook output priority 0; policy accept;\n  }\n}\n",
+              "net/services.csv": "service,port,source\nssh,22,10.8.0.0/24\nhttp,80,any\nhttps,443,any\npostgres,5432,127.0.0.1\nredis,6379,127.0.0.1\nrdp,3389,aucune\n",
+              "docs/changelog.md": "Le jeu de regles precedent autorisait tout le trafic entrant.\n"
+            },
+            "dirs": [
+              "etc"
+            ],
+            "checks": [
+              {
+                "id": "policy-drop",
+                "type": "run",
+                "cmd": "grep -c 'policy drop' etc/nftables.hardened.conf | awk '$1>=1' && echo PASS",
+                "expect": "PASS",
+                "label": "La politique par défaut est drop sur input"
+              },
+              {
+                "id": "etablished",
+                "type": "file_contains",
+                "path": "etc/nftables.hardened.conf",
+                "pattern": "ct state established,related accept",
+                "label": "Les connexions établies sont autorisées"
+              },
+              {
+                "id": "ssh-restreint",
+                "type": "file_contains",
+                "path": "etc/nftables.hardened.conf",
+                "pattern": "dport 22[^\\n]*saddr 10\\.8\\.0\\.0/24",
+                "label": "SSH est restreint au réseau d'administration"
+              },
+              {
+                "id": "rdp-ferme",
+                "type": "file_not_contains",
+                "path": "etc/nftables.hardened.conf",
+                "pattern": "dport 3389",
+                "label": "Aucune ouverture pour RDP (3389)"
+              },
+              {
+                "id": "redis-ferme",
+                "type": "file_not_contains",
+                "path": "etc/nftables.hardened.conf",
+                "pattern": "dport 6379",
+                "label": "Aucune ouverture pour Redis (6379)"
+              },
+              {
+                "id": "verificateur",
+                "type": "run",
+                "cmd": "bash verifier-regles.sh | grep -q 'OK' && echo PASS",
+                "expect": "PASS",
+                "label": "verifier-regles.sh valide la politique"
+              },
+              {
+                "id": "plan",
+                "type": "file_contains",
+                "path": "plan-filtrage.md",
+                "pattern": "(?i)(3389|rdp)",
+                "label": "Le plan justifie la fermeture de RDP"
+              }
+            ],
+            "hints": [
+              "Place iif lo accept et ct state established avant les règles de ports : l'ordre compte en nftables.",
+              "verifier-regles.sh peut combiner grep -q et afficher KO avec exit 1 quand un contrôle échoue."
+            ],
+            "solution": "cat > etc/nftables.hardened.conf <<'NFT'\ntable inet filter {\n  chain input {\n    type filter hook input priority 0; policy drop;\n    iif lo accept\n    ct state established,related accept\n    ip protocol icmp accept\n    tcp dport 22 ip saddr 10.8.0.0/24 accept\n    tcp dport { 80, 443 } accept\n    tcp dport 5432 ip saddr 127.0.0.1 accept\n  }\n  chain forward {\n    type filter hook forward priority 0; policy drop;\n  }\n  chain output {\n    type filter hook output priority 0; policy accept;\n  }\n}\nNFT\ncat > verifier-regles.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nf=etc/nftables.hardened.conf\nok=true\ngrep -q 'policy drop' \"$f\" || { echo 'KO: pas de policy drop'; ok=false; }\ngrep -q 'ct state established,related accept' \"$f\" || { echo 'KO: established absent'; ok=false; }\ngrep -q 'dport 3389' \"$f\" && { echo 'KO: RDP expose'; ok=false; }\ngrep -q 'dport 6379' \"$f\" && { echo 'KO: Redis expose'; ok=false; }\ngrep -qE 'dport 22 .*10\\.8\\.0\\.0/24' \"$f\" || { echo 'KO: SSH non restreint'; ok=false; }\n$ok && echo OK\nBASH\ncat > plan-filtrage.md <<'MD'\n# Plan de filtrage\n\n- Politique par defaut : drop sur input et forward, accept sur output.\n- Loopback et connexions etablies : acceptes (sinon tout casse).\n- SSH (22) : restreint au reseau d'administration 10.8.0.0/24.\n- HTTP/HTTPS (80, 443) : publics, c'est le service rendu.\n- PostgreSQL (5432) : uniquement depuis 127.0.0.1.\n- Redis (6379) et RDP (3389) : aucune ouverture. RDP est un service d'administration qui n'a rien a faire sur Internet ; Redis n'a pas d'authentification par defaut.\nMD\nchmod +x verifier-regles.sh\n"
+          },
+          "remediation": "Déploie les règles par configuration déclarative (nftables + git, ou Terraform côté cloud), teste avant application (nft -c) et prévois un accès de secours hors bande pour ne pas te verrouiller dehors."
+        }
+      ]
+    }
+  ]
+}

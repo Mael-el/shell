@@ -1,0 +1,523 @@
+{
+  "level": 4,
+  "name": "Reconnaissance",
+  "tagline": "Voir avant d'attaquer, comprendre avant d'agir",
+  "description": "OSINT, DNS, empreinte applicative, lecture de scans et énumération de services : transformer des signaux publics en carte d'attaque exploitable et priorisée.",
+  "icon": "🔎",
+  "accent": "#f59e0b",
+  "modules": [
+    {
+      "id": "m09",
+      "title": "OSINT et cartographie d'un domaine",
+      "description": "Cartographier la surface publique d'une organisation à partir de sources ouvertes, sans jamais toucher aux systèmes cibles.",
+      "category": "reconnaissance",
+      "difficulty": "medium",
+      "missions": [
+        {
+          "id": "m09-01",
+          "title": "Cartographie DNS et surface d'attaque",
+          "brief": "Une zone DNS complète a fuité. Transforme-la en inventaire d'actifs priorisé.",
+          "difficulty": "medium",
+          "points": 320,
+          "estimated_minutes": 45,
+          "tags": [
+            "DNS",
+            "OSINT",
+            "actifs",
+            "surface d'attaque"
+          ],
+          "objectives": [
+            "Distinguer A, CNAME, MX, NS et TXT",
+            "Construire un inventaire d'actifs exploitable",
+            "Identifier les actifs à risque (staging, VPN, dépréciés)"
+          ],
+          "lesson": {
+            "summary": "La reconnaissance commence par les noms : chaque enregistrement DNS est une porte potentielle. Un staging oublié est souvent moins protégé que la production ; un VPN expose un service d'authentification ; un TXT mal configuré révèle votre fournisseur d'email.",
+            "sections": [
+              {
+                "id": "types",
+                "name": "Lire une zone",
+                "content": "A mappe un nom vers IPv4, AAAA vers IPv6, CNAME crée un alias, MX désigne le serveur mail, NS les serveurs autoritatifs, TXT porte SPF/DKIM/vérifications tierces. Un CNAME vers un nom non résolu est un risque de takeover."
+              },
+              {
+                "id": "inventaire",
+                "name": "Structurer les actifs",
+                "content": "Un inventaire utile contient hote, ip, type, source, environnement. Il doit être dédupliqué et trié : sans cela, impossible de prioriser ou de mesurer la couverture d'un scan."
+              },
+              {
+                "id": "risque",
+                "name": "Prioriser",
+                "content": "Trois signaux : environnement non-production (staging, dev, test), service d'accès (vpn, jump, admin) et TTL anormalement bas (indice de bascule rapide ou de proxy). Croise ensuite avec les scans pour confirmer."
+              }
+            ],
+            "references": [
+              {
+                "command": "awk '$4==\"A\"' zone.txt",
+                "role": "Extraire les A",
+                "example": "awk '$4==\"A\" {print $1, $5}' recon/zone.txt"
+              },
+              {
+                "command": "grep ' CNAME ' zone.txt",
+                "role": "Lister les alias",
+                "example": "grep ' CNAME ' recon/zone.txt"
+              },
+              {
+                "command": "sort -u actifs.csv",
+                "role": "Dédupliquer",
+                "example": "awk -F, '!seen[$1]++' actifs.csv"
+              }
+            ],
+            "pitfalls": [
+              "Confondre MX et A : le MX désigne le nom du serveur mail, pas son adresse.",
+              "Oublier les CNAME : un alias vers un service tiers est une dépendance externe."
+            ]
+          },
+          "lab": {
+            "task": "À partir de recon/zone.txt, produis actifs.csv (colonnes hote,ip,type,source) couvrant tous les A, le CNAME résolu vers sa cible et le MX, puis surface.md identifiant staging, dev et vpn comme actifs sensibles avec recommandation, et dns-recon.sh qui liste hôte, type et IP depuis la zone.",
+            "steps": [
+              "Repère les types d'enregistrements présents",
+              "Construis le CSV en résolvant le CNAME dev vers app",
+              "Rédige surface.md en justifiant le risque de chaque actif"
+            ],
+            "files": {
+              "recon/zone.txt": "shellforge.test.        3600 IN SOA ns1.shellforge.test. hostmaster.shellforge.test. 2025011201 3600 1800 604800 300\nshellforge.test.        3600 IN NS  ns1.shellforge.test.\nshellforge.test.        3600 IN NS  ns2.shellforge.test.\nshellforge.test.        3600 IN A   192.0.2.10\nwww.shellforge.test.    3600 IN A   192.0.2.10\napp.shellforge.test.    300  IN A   192.0.2.20\nmail.shellforge.test.   3600 IN A   192.0.2.30\nshellforge.test.        3600 IN MX  10 mail.shellforge.test.\nshellforge.test.        3600 IN TXT \"v=spf1 include:_spf.shellforge.test -all\"\nstaging.shellforge.test. 60  IN A   192.0.2.99\nvpn.shellforge.test.    3600 IN A   198.51.100.5\ndev.shellforge.test.    300  IN CNAME app.shellforge.test.\n",
+              "recon/whois.txt": "Registrar: Example Registrar\nCreation Date: 2019-04-02\nName Servers: ns1.shellforge.test, ns2.shellforge.test\n",
+              "recon/crtsh.txt": "app.shellforge.test (2024-11-02)\nstaging.shellforge.test (2024-12-18)\nvpn.shellforge.test (2025-01-05)\n"
+            },
+            "checks": [
+              {
+                "id": "csv-existe",
+                "type": "run",
+                "cmd": "test $(wc -l < actifs.csv) -ge 9 && head -1 actifs.csv | grep -qi 'hote' && echo PASS",
+                "expect": "PASS",
+                "label": "actifs.csv contient un en-tête et au moins 9 actifs"
+              },
+              {
+                "id": "csv-staging",
+                "type": "file_contains",
+                "path": "actifs.csv",
+                "pattern": "staging\\.shellforge\\.test",
+                "label": "Le staging est inventorié"
+              },
+              {
+                "id": "csv-mx",
+                "type": "file_contains",
+                "path": "actifs.csv",
+                "pattern": "192\\.0\\.2\\.30",
+                "label": "Le serveur mail (MX) est résolu en IP"
+              },
+              {
+                "id": "csv-cname",
+                "type": "run",
+                "cmd": "grep -q 'dev.shellforge.test' actifs.csv && grep -q '192.0.2.20' actifs.csv && echo PASS",
+                "expect": "PASS",
+                "label": "Le CNAME dev est résolu vers app (192.0.2.20)"
+              },
+              {
+                "id": "script",
+                "type": "run",
+                "cmd": "bash dns-recon.sh | grep -q 'dev.shellforge.test' && bash dns-recon.sh | grep -qi 'MX\\|A' && echo PASS",
+                "expect": "PASS",
+                "label": "dns-recon.sh restitue les hôtes et leur type"
+              },
+              {
+                "id": "surface",
+                "type": "run",
+                "cmd": "grep -qi 'staging' surface.md && grep -qi 'vpn' surface.md && echo PASS",
+                "expect": "PASS",
+                "label": "surface.md identifie staging et vpn comme actifs sensibles"
+              }
+            ],
+            "hints": [
+              "Le CNAME dev ne porte pas d'IP : il faut chercher l'IP de sa cible app.shellforge.test.",
+              "Le TTL de 60 sur staging est un indice de bascule rapide, souvent un environnement jetable mal protégé."
+            ],
+            "solution": "cat > dns-recon.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nawk 'NF>=5 && $4 ~ /^(A|CNAME|MX)$/ {print $1, $4, $5}' recon/zone.txt\nBASH\nmx=$(awk '$4==\"MX\" {print $6}' recon/zone.txt)\nmxip=$(awk -v h=\"$mx\" '$1==h && $4==\"A\" {print $5}' recon/zone.txt)\n{\n  printf 'hote,ip,type,source\\n'\n  {\n    awk '$4==\"A\" {print $1\",\"$5\",A,zone\"}' recon/zone.txt\n    printf '%s,%s,MX,zone\\n' \"$mx\" \"$mxip\"\n    printf 'dev.shellforge.test,192.0.2.20,CNAME->app,zone\\n'\n  } | sort -u\n} > actifs.csv\ncat > surface.md <<'MD'\n# Surface d'attaque de shellforge.test\n\n- staging.shellforge.test (192.0.2.99) : environnement non production, TTL 60. Souvent sans WAF ni authentification forte, c'est la cible la plus probable. Recommandation : restreindre par IP ou retirer du DNS public.\n- dev.shellforge.test : CNAME vers app. Meme surface que la production mais sans suivi de correctifs. Recommandation : supprimer ou proteger.\n- vpn.shellforge.test (198.51.100.5) : point d'acces unique, cible privilegiee de brute force. Recommandation : MFA obligatoire et surveillance des echecs.\n- mail.shellforge.test (192.0.2.30) : verifier SPF/DKIM/DMARC (le TXT SPF existe).\n- www et app : production, derriere le meme enregistrement A.\nMD\nchmod +x dns-recon.sh\n"
+          },
+          "remediation": "Réduis la surface publique : pas de staging exposé, DNS interne séparé, certificats wildcard maîtrisés, et inventaire maintenu automatiquement (CT logs + zone). Chaque actif doit avoir un propriétaire."
+        },
+        {
+          "id": "m09-02",
+          "title": "OSINT applicatif : fuites, robots et secrets",
+          "brief": "Le JavaScript public expose des endpoints internes et une clé d'API. Exploite l'information sans jamais copier le secret.",
+          "difficulty": "medium",
+          "points": 330,
+          "estimated_minutes": 45,
+          "tags": [
+            "OSINT",
+            "robots.txt",
+            "JavaScript",
+            "secrets",
+            "masquage"
+          ],
+          "objectives": [
+            "Extraire des endpoints depuis des ressources publiques",
+            "Détecter un secret exposé sans le divulguer",
+            "Rédiger une remédiation de fuite d'information"
+          ],
+          "lesson": {
+            "summary": "Le code livré au navigateur est public : commentaires, endpoints, clés et noms d'hôtes internes s'y trouvent régulièrement. robots.txt révèle aussi ce que l'on veut cacher. La bonne pratique est de documenter le risque en masquant systématiquement la valeur du secret.",
+            "sections": [
+              {
+                "id": "js",
+                "name": "Lire le JavaScript",
+                "content": "Les chemins d'API apparaissent souvent en clair (/api/internal/users). Une clé au format AKIA... est une clé AWS. Un nom d'hôte *.internal.* indique un réseau interne non exposé mais référencé."
+              },
+              {
+                "id": "robots",
+                "name": "robots.txt n'est pas une sécurité",
+                "content": "Disallow: /admin indique précisément où chercher. Ce fichier est public et ne protège rien : il faut une authentification côté serveur."
+              },
+              {
+                "id": "masquage",
+                "name": "Ne jamais recopier un secret",
+                "content": "Dans un rapport, on écrit AKIA****************MPLE et on référence un coffre. Recopier la valeur transforme un rapport en incident de fuite supplémentaire."
+              }
+            ],
+            "references": [
+              {
+                "command": "grep -oE '\"/api/[a-z0-9/_-]+\"'",
+                "role": "Extraire des endpoints",
+                "example": "grep -oE '\"/api/[a-z0-9/_-]+\"' recon/js/app.js"
+              },
+              {
+                "command": "grep -oE 'AKIA[0-9A-Z]{16}'",
+                "role": "Détecter une clé AWS",
+                "example": "grep -oE 'AKIA[0-9A-Z]{16}' recon/js/app.js"
+              },
+              {
+                "command": "sort -u",
+                "role": "Dédupliquer les résultats",
+                "example": "cat endpoints.txt | sort -u"
+              }
+            ],
+            "pitfalls": [
+              "Copier la clé dans le rapport « pour preuve » : c'est une seconde fuite.",
+              "Tester les endpoints internes trouvés sur l'infrastructure réelle sans autorisation."
+            ]
+          },
+          "lab": {
+            "task": "Analyse recon/ (app.js, robots.txt, headers.txt, emails.txt). Produis fuites.md (endpoints, hôte interne, clé masquée, dossiers robots, risque de phishing), secrets.txt (valeurs masquées avec référence), et extraire.sh qui liste les chemins d'API uniques détectés dans le JS.",
+            "steps": [
+              "Extrais les chemins et les noms d'hôtes du JS",
+              "Masque la clé (4 premiers + 4 derniers caractères)",
+              "Rédige fuites.md avec impact et remédiation"
+            ],
+            "files": {
+              "recon/js/app.js": "const API = '/api/internal/users';\nconst AUTH = '/api/v1/auth';\nconst VAULT = 'https://vault.shellforge.test';\nconst AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';\nconst DB = 'postgres://app@db.internal.shellforge.test:5432/app';\nfetch(API).then(r => r.json());\n",
+              "recon/robots.txt": "User-agent: *\nDisallow: /admin\nDisallow: /backup\nDisallow: /api/internal\n",
+              "recon/headers.txt": "HTTP/1.1 200 OK\nServer: nginx/1.14.0\nX-Powered-By: PHP/7.2.24\nContent-Type: text/html\n",
+              "recon/emails.txt": "contact@shellforge.test\nsupport@shellforge.test\nj.martin@shellforge.test\n"
+            },
+            "checks": [
+              {
+                "id": "fuites-endpoint",
+                "type": "file_contains",
+                "path": "fuites.md",
+                "pattern": "/api/internal/users",
+                "label": "L'endpoint interne est documenté"
+              },
+              {
+                "id": "fuites-host",
+                "type": "file_contains",
+                "path": "fuites.md",
+                "pattern": "db\\.internal",
+                "label": "L'hôte interne est documenté"
+              },
+              {
+                "id": "secret-masque",
+                "type": "run",
+                "cmd": "! grep -rq 'AKIAIOSFODNN7EXAMPLE' fuites.md secrets.txt && grep -q 'AKIA' secrets.txt && echo PASS",
+                "expect": "PASS",
+                "label": "La clé est référencée mais jamais recopiée en clair"
+              },
+              {
+                "id": "robots",
+                "type": "file_contains",
+                "path": "fuites.md",
+                "pattern": "/backup",
+                "label": "Les chemins de robots.txt sont analysés"
+              },
+              {
+                "id": "script",
+                "type": "run",
+                "cmd": "bash extraire.sh | grep -q '/api/internal/users' && bash extraire.sh | grep -q '/api/v1/auth' && echo PASS",
+                "expect": "PASS",
+                "label": "extraire.sh liste les endpoints uniques du JS"
+              },
+              {
+                "id": "remediation",
+                "type": "file_contains",
+                "path": "fuites.md",
+                "pattern": "(?i)(rotation|révoqu|revoqu)",
+                "label": "La remédiation impose la révocation/rotation du secret"
+              }
+            ],
+            "hints": [
+              "grep -oE '\\\"/api/[a-z0-9/_-]+\\\"' recon/js/app.js | tr -d '\"' | sort -u",
+              "Masquage lisible : AKIA************MPLE — conserve assez pour identifier, pas assez pour utiliser."
+            ],
+            "solution": "cat > extraire.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\ngrep -oE '/api/[a-z0-9/_-]+' recon/js/app.js | sort -u\nBASH\ncat > fuites.md <<'MD'\n# Fuites d'information (OSINT applicatif)\n\n## Endpoints et hotes internes\n- /api/internal/users : API interne exposee dans le bundle public.\n- /api/v1/auth : endpoint d'authentification.\n- vault.shellforge.test : coffre de secrets reference en clair.\n- db.internal.shellforge.test : nom interne de la base de donnees.\n\n## Secret expose\nCle AWS detectee dans app.js : **AKIA************MPLE** (reference coffre : AWS_KEY).\nRemediation immediate : revocation puis rotation de la cle, suppression du bundle public, injection du secret cote serveur.\n\n## robots.txt\nDisallow: /admin, /backup, /api/internal.\nrobots.txt n'est pas un contrôle d'acces : il revele precisement la cartographie. Ces chemins doivent etre proteges par authentification.\n\n## Emails\ncontact@, support@ et j.martin@shellforge.test. Le compte nominatif expose un risque de spear-phishing.\nMD\ncat > secrets.txt <<'TXT'\nAWS_KEY=AKIA************MPLE (coffre: AWS_KEY)\nDB_URI=postgres://app:***@db.internal.shellforge.test:5432/app\nTXT\nchmod +x extraire.sh\n"
+          },
+          "remediation": "Traite les secrets exposés comme compromis : révocation, rotation, audit d'usage. Ajoute un scan de secrets en CI (gitleaks), retire les commentaires et endpoints internes du bundle, et protège réellement ce que robots.txt prétend cacher."
+        }
+      ]
+    },
+    {
+      "id": "m10",
+      "title": "Scan réseau et énumération",
+      "description": "Lire un scan sans se noyer, prioriser les risques, puis énumérer les services pour préparer une exploitation autorisée.",
+      "category": "reconnaissance",
+      "difficulty": "hard",
+      "missions": [
+        {
+          "id": "m10-01",
+          "title": "Corréler un scan réseau et prioriser",
+          "brief": "Cinq hôtes, douze ports ouverts. Tous ne se valent pas : construis la liste de risques que la direction peut comprendre.",
+          "difficulty": "hard",
+          "points": 340,
+          "estimated_minutes": 50,
+          "tags": [
+            "nmap",
+            "corrélation",
+            "risque",
+            "priorisation"
+          ],
+          "objectives": [
+            "Parser une sortie de scan structurée",
+            "Associer ports, services et versions",
+            "Prioriser selon l'exposition et la criticité"
+          ],
+          "lesson": {
+            "summary": "Un scan brut n'est pas un rapport. La valeur vient de la corrélation : quel service, quelle version, sur quel hôte, exposé à qui, avec quel impact métier. La priorisation distingue un Telnet sur un serveur legacy d'un SSH récent restreint au bastion.",
+            "sections": [
+              {
+                "id": "parse",
+                "name": "Lire une sortie gnmap",
+                "content": "Les lignes « Host: » donnent l'IP et le nom, les lignes « Ports: » listent port/état/protocole/service. Un parseur robuste produit un CSV hôte,ip,port,service : c'est la matière première de toute analyse."
+              },
+              {
+                "id": "criticite",
+                "name": "Hiérarchiser",
+                "content": "Trois axes : sensibilité du service (FTP anonyme, Telnet, SMBv1 sont critiques), exposition (public vs interne), et ancienneté/version. Un MySQL exposé sur un serveur web est plus grave qu'un MySQL local."
+              },
+              {
+                "id": "communication",
+                "name": "Parler au décideur",
+                "content": "Chaque risque s'écrit en une phrase : « Telnet ouvert sur legacy01 permet l'interception des identifiants en clair ». Pas de jargon inutile, pas de note sans impact."
+              }
+            ],
+            "references": [
+              {
+                "command": "sed -n 's/.*Ports: //p'",
+                "role": "Extraire la liste des ports",
+                "example": "sed -n 's/.*Ports: \\([^\\t]*\\).*/\\1/p' scan/nmap.gnmap"
+              },
+              {
+                "command": "tr ',' '\\n'",
+                "role": "Éclater une liste",
+                "example": "tr ',' '\\n' < ports.txt"
+              },
+              {
+                "command": "cut -d/ -f1",
+                "role": "Isoler le numéro de port",
+                "example": "cut -d/ -f1"
+              }
+            ],
+            "pitfalls": [
+              "Confondre port filtré et port fermé.",
+              "Copier la sortie nmap telle quelle dans un rapport : illisible et non priorisée."
+            ]
+          },
+          "lab": {
+            "task": "Depuis scan/nmap.gnmap et scan/services.csv, produis ports.csv (host,ip,port,service) avec un en-tête, risques.md (priorisation argumentée avec legacy01 et SMBv1 en tête), tri.sh qui régénère ports.csv et signale les services critiques, et remediation-reseau.md.",
+            "steps": [
+              "Parse les lignes Host/Ports pour construire ports.csv",
+              "Croise avec services.csv pour ajouter les versions",
+              "Rédige risques.md en trois niveaux de criticité"
+            ],
+            "files": {
+              "scan/nmap.gnmap": "Host: 10.20.0.10 (web01.shellforge.test)\tStatus: Up\nHost: 10.20.0.10 (web01.shellforge.test)\tPorts: 22/open/tcp//ssh///, 80/open/tcp//http///, 443/open/tcp//https///, 3306/open/tcp//mysql///\tIgnored State: closed (997)\nHost: 10.20.0.20 (db01.shellforge.test)\tStatus: Up\nHost: 10.20.0.20 (db01.shellforge.test)\tPorts: 22/open/tcp//ssh///, 3306/open/tcp//mysql///\tIgnored State: closed (998)\nHost: 10.20.0.30 (legacy01.shellforge.test)\tStatus: Up\nHost: 10.20.0.30 (legacy01.shellforge.test)\tPorts: 21/open/tcp//ftp///, 23/open/tcp//telnet///, 445/open/tcp//microsoft-ds///\tIgnored State: closed (997)\nHost: 10.20.0.40 (files.shellforge.test)\tStatus: Up\nHost: 10.20.0.40 (files.shellforge.test)\tPorts: 139/open/tcp//netbios-ssn///, 445/open/tcp//microsoft-ds///\tIgnored State: closed (998)\nHost: 10.20.0.100 (jump.shellforge.test)\tStatus: Up\nHost: 10.20.0.100 (jump.shellforge.test)\tPorts: 22/open/tcp//ssh///\tIgnored State: closed (999)\n",
+              "scan/services.csv": "port,service,version,risque\n21,ftp,vsftpd 2.3.4,critique\n23,telnet,telnetd,clair\n445,smb,SMBv1 active,critique\n3306,mysql,5.5.62,eleve\n22,ssh,OpenSSH 7.2p2,moyen\n80,http,nginx 1.14.0,moyen\n443,https,nginx 1.14.0,moyen\n139,netbios-ssn,samba 4.9,eleve\n"
+            },
+            "checks": [
+              {
+                "id": "csv-taille",
+                "type": "run",
+                "cmd": "test $(wc -l < ports.csv) -eq 13 && head -1 ports.csv | grep -qi 'host' && echo PASS",
+                "expect": "PASS",
+                "label": "ports.csv contient 12 ports et un en-tête"
+              },
+              {
+                "id": "csv-telnet",
+                "type": "file_contains",
+                "path": "ports.csv",
+                "pattern": "legacy01.*23.*telnet",
+                "label": "Telnet sur legacy01 est correctement extrait"
+              },
+              {
+                "id": "csv-mysql",
+                "type": "file_contains",
+                "path": "ports.csv",
+                "pattern": "web01.*3306.*mysql",
+                "label": "Le MySQL exposé sur web01 est identifié"
+              },
+              {
+                "id": "risques-legacy",
+                "type": "file_contains",
+                "path": "risques.md",
+                "pattern": "(?i)legacy01.*(telnet|ftp|smb)|(telnet|ftp|smb).*legacy01",
+                "label": "Le serveur legacy est priorisé en tête"
+              },
+              {
+                "id": "risques-smbv1",
+                "type": "file_contains",
+                "path": "risques.md",
+                "pattern": "SMBv1",
+                "label": "SMBv1 est explicitement nommé comme risque critique"
+              },
+              {
+                "id": "script",
+                "type": "run",
+                "cmd": "bash tri.sh | grep -q '23' && bash tri.sh | grep -qi 'critique' && echo PASS",
+                "expect": "PASS",
+                "label": "tri.sh signale les services critiques"
+              }
+            ],
+            "hints": [
+              "Chaque bloc « Ports: » suit une ligne Host: : conserve l'hôte courant pendant le parcours du fichier.",
+              "Un port 3306 sur un serveur web est plus grave que sur un serveur de base isolé."
+            ],
+            "solution": "cat > tri.sh <<'BASH'\n#!/usr/bin/env bash\nset -euo pipefail\nawk -F, 'NR>1 && ($1==21 || $1==23 || $1==445) {print \"CRITIQUE port \" $1 \" \" $2 \" \" $3}' scan/services.csv\nBASH\nchmod +x tri.sh\nprintf 'host,ip,port,service\\n' > ports.csv\nwhile IFS= read -r line; do\n  case \"$line\" in\n    *\"Ports:\"*)\n      ports=$(printf '%s' \"$line\" | sed -E 's/.*Ports: //; s/\\tIgnored.*$//')\n      printf '%s\\n' \"$ports\" | tr ',' '\\n' | sed 's/^ *//' | while IFS='/' read -r port _ _ _ svc _; do\n        echo \"$host,$ip,$port,$svc\"\n      done >> ports.csv\n      ;;\n    \"Host: \"*\"Status: Up\")\n      host=$(printf '%s' \"$line\" | sed -E 's/^Host: [0-9.]+ \\(([^)]+)\\).*/\\1/')\n      ip=$(printf '%s' \"$line\" | sed -E 's/^Host: ([0-9.]+).*/\\1/')\n      ;;\n  esac\ndone < scan/nmap.gnmap\ncat > risques.md <<'MD'\n# Risques prioritises\n\n## Critique\n- legacy01 (10.20.0.30) : FTP vsftpd 2.3.4 (backdoor connue), Telnet en clair, SMBv1. Recommandation : isolement immediat puis decommissionnement.\n- files (10.20.0.40) : SMBv1 actif, signature non verifiee, risque de relais NTLM. Recommandation : SMBv2+ et signature obligatoire.\n\n## Eleve\n- web01 (10.20.0.10) : MySQL 3306 expose sur un serveur web. Recommandation : restreindre a db01 et au reseau applicatif.\n- db01 (10.20.0.20) : MySQL 5.5.62 en fin de vie. Recommandation : migration.\n\n## Moyen\n- OpenSSH 7.2p2 obsolete sur jump et web. Recommandation : mise a jour et restriction par source.\nMD\n"
+          },
+          "remediation": "Priorise par réduction de surface : fermer Telnet/FTP, imposer SMBv2 signé, déplacer les bases sur un réseau dédié. Mesure l'amélioration par le nombre de services critiques exposés, pas par le nombre de ports scannés."
+        },
+        {
+          "id": "m10-02",
+          "title": "Énumération de services et bannières",
+          "brief": "Les bannières racontent les versions, les configurations et les erreurs. Transforme-les en hypothèses d'exploitation.",
+          "difficulty": "hard",
+          "points": 350,
+          "estimated_minutes": 50,
+          "tags": [
+            "énumération",
+            "bannières",
+            "CVE",
+            "SMB",
+            "FTP"
+          ],
+          "objectives": [
+            "Identifier une version depuis une bannière",
+            "Associer version et vulnérabilité connue",
+            "Distinguer un indice d'une preuve exploitable"
+          ],
+          "lesson": {
+            "summary": "L'énumération consiste à parler aux services : bannière SSH, en-têtes HTTP, partages SMB, accès FTP anonyme. Une version obsolète est une hypothèse, pas une preuve : il faut la confronter à une configuration réelle et à une autorisation d'exploitation.",
+            "sections": [
+              {
+                "id": "bannieres",
+                "name": "Lire une bannière",
+                "content": "SSH-2.0-OpenSSH_7.2p2 indique version et distribution. Server: nginx/1.14.0 et X-Powered-By: PHP/7.2.24 révèlent une pile logicielle en fin de vie. Ces informations orientent la recherche de CVE."
+              },
+              {
+                "id": "configuration",
+                "name": "La configuration compte plus que la version",
+                "content": "Un FTP anonyme est exploitable même à jour. Un SMB sans signature de paquets expose au relais NTLM. Une session sans HttpOnly facilite le vol de cookies. L'énumération doit décrire les réglages, pas seulement les versions."
+              },
+              {
+                "id": "mapping",
+                "name": "Cartographier les CVE",
+                "content": "Associe chaque version à une CVE documentée (vsftpd 2.3.4 → CVE-2011-2523, OpenSSH 7.2 → CVE-2016-6210), en précisant le niveau de confiance. Un mapping honnête vaut mieux qu'une liste anxiogène."
+              }
+            ],
+            "references": [
+              {
+                "command": "grep -i 'server\\|x-powered' headers.txt",
+                "role": "Empreinte HTTP",
+                "example": "grep -iE 'server|x-powered' enum/http-headers.txt"
+              },
+              {
+                "command": "grep 'anonymous' ftp-anon.txt",
+                "role": "Accès anonyme",
+                "example": "grep -i 'anonymous' enum/ftp-anon.txt"
+              },
+              {
+                "command": "grep -i 'signing' smb.txt",
+                "role": "Signature SMB",
+                "example": "grep -i 'signing' enum/smb-shares.txt"
+              }
+            ],
+            "pitfalls": [
+              "Annoncer une exploitation sans preuve : une version ne prouve pas une vulnérabilité exploitable.",
+              "Oublier que l'exploitation réelle exige une autorisation écrite et un périmètre défini."
+            ]
+          },
+          "lab": {
+            "task": "Analyse enum/ et produis enumeration.md (constats par service : SSH, HTTP, SMB, FTP), mapping.csv (service,version,risque,cve,confiance) avec au moins 5 lignes dont CVE-2011-2523 et CVE-2016-6210, et collecte.sh qui affiche un constat par service détecté.",
+            "steps": [
+              "Relève les versions et les réglages dans chaque fichier",
+              "Associe les versions aux CVE documentées",
+              "Rédige les constats avec niveau de confiance"
+            ],
+            "files": {
+              "enum/ssh-banner.txt": "SSH-2.0-OpenSSH_7.2p2 Ubuntu-4ubuntu2.10\nAuthentications that can continue: password,publickey\n",
+              "enum/http-headers.txt": "HTTP/1.1 200 OK\nServer: nginx/1.14.0\nX-Powered-By: PHP/7.2.24\nSet-Cookie: PHPSESSID=abc123; path=/\nX-Frame-Options: absent\n",
+              "enum/smb-shares.txt": "Sharename       Type      Comment\nIPC$            IPC       Remote IPC\ndata            Disk      Donnees partagees\nbackups         Disk      Sauvegardes\n\nsmb signing: disabled\nguest access: enabled\nprotocol: SMBv1\n",
+              "enum/ftp-anon.txt": "220 (vsFTPd 2.3.4)\nUSER anonymous\n331 Please specify the password.\n230 Login successful.\n"
+            },
+            "checks": [
+              {
+                "id": "enum-anonymous",
+                "type": "file_contains",
+                "path": "enumeration.md",
+                "pattern": "(?i)anonyme|anonymous",
+                "label": "L'accès FTP anonyme est constaté"
+              },
+              {
+                "id": "enum-signing",
+                "type": "file_contains",
+                "path": "enumeration.md",
+                "pattern": "(?i)signature|signing",
+                "label": "L'absence de signature SMB est constatée"
+              },
+              {
+                "id": "mapping-cve-ftp",
+                "type": "file_contains",
+                "path": "mapping.csv",
+                "pattern": "CVE-2011-2523",
+                "label": "vsftpd 2.3.4 est associé à CVE-2011-2523"
+              },
+              {
+                "id": "mapping-cve-ssh",
+                "type": "file_contains",
+                "path": "mapping.csv",
+                "pattern": "CVE-2016-6210",
+                "label": "OpenSSH 7.2 est associé à CVE-2016-6210"
+              },
+              {
+                "id": "mapping-taille",
+                "type": "run",
+                "cmd": "test $(wc -l < mapping.csv) -ge 6 && head -1 mapping.csv | grep -qi 'service' && echo PASS",
+                "expect": "PASS",
+                "label": "mapping.csv contient un en-tête et au moins 5 findings"
+              },
+              {
+                "id": "collecte",
+                "type": "run",
+                "cmd": "bash collecte.sh | grep -qi 'SMB' && bash collecte.sh | grep -qi 'FTP' && echo PASS",
+                "expect": "PASS",
+                "label": "collecte.sh restitue un constat par service"
+              }
+            ],
+            "hints": [
+              "Le relais NTLM est possible quand la signature SMB est désactivée : c'est une vulnérabilité de configuration, pas de version.",
+              "Ajoute une colonne confiance (élevée/moyenne/faible) à ton mapping : c'est ce qui distingue un audit d'une devinette."
+            ],
+            "solution": "{ echo '# Enumeration des services'; echo; echo '## SSH'; echo 'OpenSSH 7.2p2 (Ubuntu). Authentification par mot de passe autorisee. Version obsolete : CVE-2016-6210 (oracle de mot de passe). Confiance elevee sur la version, moyenne sur l exploitation.'; echo; echo '## HTTP'; echo 'nginx 1.14.0 et PHP 7.2.24 : pile en fin de vie. Cookie de session sans attribut HttpOnly ni Secure, X-Frame-Options absent. Risque de vol de session via XSS et de clickjacking.'; echo; echo '## SMB'; echo 'SMBv1 actif, signature des paquets desactivee et acces guest autorise : relais NTLM et acces non authentifie aux partages data et backups. Risque critique, exploitable sans CVE.'; echo; echo '## FTP'; echo 'vsFTPd 2.3.4 avec connexion anonyme reussie : acces non authentifie. Cette version contient une backdoor connue (CVE-2011-2523).'; echo; echo '## Conclusion'; echo 'Deux services offrent un acces non authentifie (FTP anonyme, partages SMB guest) : ce sont les priorites, independamment des versions.'; } > enumeration.md\nprintf 'service,version,risque,cve,confiance\\nftp,vsftpd 2.3.4,backdoor + acces anonyme,CVE-2011-2523,elevee\\nssh,OpenSSH 7.2p2,oracle de mot de passe,CVE-2016-6210,moyenne\\nhttp,nginx 1.14.0,fins de vie / pas de correctifs,CVE-2019-9511,faible\\nhttp,PHP 7.2.24,fin de support,aucune CVE unique,elevee\\nsmb,SMBv1,signature desactivee et guest actif,pas de CVE (configuration),elevee\\nsmb,samba 4.9,partages sensibles exposes,pas de CVE (configuration),moyenne\\n' > mapping.csv\nprintf '#!/usr/bin/env bash\\nset -euo pipefail\\nprintf \"FTP : %%s\\\\n\" \"$(head -1 enum/ftp-anon.txt)\"\\nprintf \"SSH : %%s\\\\n\" \"$(head -1 enum/ssh-banner.txt)\"\\nprintf \"HTTP : %%s\\\\n\" \"$(grep -i '^Server' enum/http-headers.txt)\"\\nprintf \"SMB : %%s\\\\n\" \"$(grep -i 'protocol' enum/smb-shares.txt)\"\\n' > collecte.sh"
+          },
+          "remediation": "Corrige d'abord ce qui est exploitable sans CVE : FTP anonyme, guest SMB, signature SMB, cookies sans HttpOnly. Puis planifie les mises à jour de la pile (PHP, nginx) et la fin de vie de SMBv1. Toute exploitation de CVE exige une autorisation et un environnement de test."
+        }
+      ]
+    }
+  ]
+}
